@@ -4,13 +4,17 @@
 #include <omnetpp.h>
 #include <unordered_map>
 #include <string>
+#include <vector>
 #include "Info_m.h"
 
 class Dispatcher : public omnetpp::cSimpleModule
 {
     private:
-        std::unordered_map<std::string, Info*> edgeServerStatus;
-
+        std::unordered_map<int, Info*> edgeServerStatus;
+        std::vector<int> connectedServerIndices;
+        std::vector<omnetpp::cGate*> connectedGates;
+        int maximumHop;
+        int memoryThreshold;
     protected:
         virtual void initialize() override;
         virtual void handleMessage(omnetpp::cMessage *msg) override;

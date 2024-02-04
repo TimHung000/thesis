@@ -14,12 +14,11 @@
 //
 
 
-simple InfoCollector
+simple InfoHandler
 {
     parameters:
         @display("i=device/server2");
     gates:
         input processorInfoIn;
         inout otherEdgeServerInfoPorts[];
-        output infoOut;
 }

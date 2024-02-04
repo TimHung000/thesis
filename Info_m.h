@@ -22,22 +22,26 @@ class Info;
  * <pre>
  * message Info
  * {
- *     int serverId;
+ *     int serverIdx;
  *     string serverName;
  *     double serverFrequency;
+ *     double serverCapacity;
  *     int taskCount;
  *     double totalRequiredCycle;
+ *     double totalMemoryConsumed;
  * }
  * </pre>
  */
 class Info : public ::omnetpp::cMessage
 {
   protected:
-    int serverId = 0;
+    int serverIdx = 0;
     omnetpp::opp_string serverName;
     double serverFrequency = 0;
+    double serverCapacity = 0;
     int taskCount = 0;
     double totalRequiredCycle = 0;
+    double totalMemoryConsumed = 0;
 
   private:
     void copy(const Info& other);
@@ -54,8 +58,8 @@ class Info : public ::omnetpp::cMessage
     virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
-    virtual int getServerId() const;
-    virtual void setServerId(int serverId);
+    virtual int getServerIdx() const;
+    virtual void setServerIdx(int serverIdx);
 
     virtual const char * getServerName() const;
     virtual void setServerName(const char * serverName);
@@ -63,11 +67,17 @@ class Info : public ::omnetpp::cMessage
     virtual double getServerFrequency() const;
     virtual void setServerFrequency(double serverFrequency);
 
+    virtual double getServerCapacity() const;
+    virtual void setServerCapacity(double serverCapacity);
+
     virtual int getTaskCount() const;
     virtual void setTaskCount(int taskCount);
 
     virtual double getTotalRequiredCycle() const;
     virtual void setTotalRequiredCycle(double totalRequiredCycle);
+
+    virtual double getTotalMemoryConsumed() const;
+    virtual void setTotalMemoryConsumed(double totalMemoryConsumed);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const Info& obj) {obj.parsimPack(b);}

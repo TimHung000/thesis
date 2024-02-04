@@ -15,11 +15,13 @@
 
 message Info
 {
-    int serverId;
+    int serverIdx;
     string serverName;
     double serverFrequency;
+    double serverCapacity;
     int taskCount;
     double totalRequiredCycle;
+    double totalMemoryConsumed;
 }
 
 

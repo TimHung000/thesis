@@ -14,16 +14,13 @@ Processor::~Processor()
 
 void Processor::initialize()
 {
-    busySignal = registerSignal("busy");
-    cpuFrequencySignal = registerSignal("cpuFrequency");
-    emit(busySignal, false);
-    WATCH_PTR(taskRunning);
-    std::vector<double> frequencyList = {1000000000, 2000000000, 3000000000};
-    std::random_device rd;
-    std::mt19937 eng(rd());
-    std::uniform_int_distribution<> distr(0, frequencyList.size() - 1);
-    frequency = frequencyList[distr(eng)];
-    emit(cpuFrequencySignal, frequency);
+    std::vector<double> frequencyList = {1*1e9, 2*1e9, 3*1e9};
+    std::vector<double> serverCapacityVector = {10000000, 20000000, 30000000};
+    int randInt = intrand(frequencyList.size() - 1);
+    frequency = frequencyList[randInt];
+    serverCapacity = serverCapacityVector[randInt];
+    totalRequiredCycles = 0;
+    totalMemoryConsumed = 0;
     endServiceMsg = new omnetpp::cMessage("end-service");
     statusReportMsg = new omnetpp::cMessage("statusReport");
     scheduleAt(0, statusReportMsg);
@@ -35,18 +32,17 @@ void Processor::handleMessage(omnetpp::cMessage *msg)
     // the processor finished the current task
     if (msg == endServiceMsg) {
         ASSERT(taskRunning != nullptr);
-        omnetpp::simtime_t d = omnetpp::simTime() - endServiceMsg->getSendingTime();
-        taskRunning->setTotalProcessingTime(taskRunning->getTotalProcessingTime() + d);
-        EV << "task processing time" << d << omnetpp::endl;
-        taskRunning->setProcessedCycles(taskRunning->getProcessedCycles() + d.dbl() * frequency);
-        EV << "task processed cycles" << d.dbl() * frequency << omnetpp::endl;
-        taskRunning->setRunningServer(getParentModule()->par("address").intValue());
-        send(taskRunning, "taskCompleteOut");
+        omnetpp::simtime_t processingTime = omnetpp::simTime() - endServiceMsg->getSendingTime();
+        double processedCycle = processingTime.dbl() * frequency;
+        taskRunning->setTotalProcessingTime(taskRunning->getTotalProcessingTime() + processingTime);
+        taskRunning->setProcessedCycles(taskRunning->getProcessedCycles() + processedCycle);
+        taskRunning->setIsCompleted(true);
+        totalRequiredCycles -= processedCycle;
+        totalMemoryConsumed -= taskRunning->getTaskSize();
+        send(taskRunning, "taskFinishedOut");
         taskRunning = nullptr;
-        emit(busySignal, false);
 
-        if (!waitingQueue.empty() && !taskRunning)
-            runNextTask();
+        scheduling();
 
         return;
     }
@@ -55,16 +51,21 @@ void Processor::handleMessage(omnetpp::cMessage *msg)
     if (msg == statusReportMsg) {
         Info *InfoMsg = createEdgeServerInfoMsg();
         send(InfoMsg, "infoOut");
-        scheduleAfter(1, statusReportMsg);
+        scheduleAfter(10, statusReportMsg);
         return;
     }
 
 
     // new task incoming from user or other server offloading their task
     Task *incomingTask = omnetpp::check_and_cast<Task*>(msg);
+    incomingTask->setRunningServer(getParentModule()->getIndex());
+    totalRequiredCycles += incomingTask->getCpuCycles();
+    totalMemoryConsumed += incomingTask->getTaskSize();
     waitingQueue.push_back(incomingTask);
-    if (!waitingQueue.empty() && !taskRunning)
-        runNextTask();
+    EV << "new task in update" << omnetpp::endl;
+    EV << "server total RequiredCycle: " << totalRequiredCycles << omnetpp::endl;
+    EV << "server total memory consumed: " << totalMemoryConsumed << omnetpp::endl;
+    scheduling();
 }
 
 void Processor::refreshDisplay() const
@@ -79,27 +80,51 @@ void Processor::finish()
 {
 }
 
-void Processor::runNextTask()
+void Processor::scheduling()
 {
+    if (taskRunning || waitingQueue.empty())
+        return;
+
     taskRunning = waitingQueue.front();
     waitingQueue.pop_front();
     double cpuCycles = taskRunning->getCpuCycles();
     double runningTime = cpuCycles / frequency;
-    EV << "task " << taskRunning->getName() << " is running and required" << cpuCycles << " cycles" << omnetpp::endl;
-    EV << "sever cpu frequency is " << frequency << omnetpp::endl;
-    EV << "running time is " << runningTime << omnetpp::endl;
+    EV << "scheduling new task" << omnetpp::endl;
+    EV << "task required cpu cycles: " << cpuCycles << omnetpp::endl;
+    EV << "server frequency: " << frequency << omnetpp::endl;
+    EV << "task running time: " << runningTime << omnetpp::endl;
+    while (omnetpp::simTime() + runningTime > taskRunning->getCreationTime() + taskRunning->getDeadline() * 1e-3) {
+        send(taskRunning, "taskFinishedOut");
+        EV << "task need to be drop because it can't complete before deadline: " << taskRunning->getCreationTime() + taskRunning->getDeadline() * 1e-3 << omnetpp::endl;
+        totalRequiredCycles -= taskRunning->getCpuCycles();
+        totalMemoryConsumed -= taskRunning->getTaskSize();
+        EV << "server total RequiredCycle: " << totalRequiredCycles << omnetpp::endl;
+        EV << "server total memory consumed: " << totalMemoryConsumed << omnetpp::endl;
+        if (waitingQueue.empty()) {
+            taskRunning = nullptr;
+            return;
+        }
+        taskRunning = waitingQueue.front();
+        waitingQueue.pop_front();
+        runningTime = taskRunning->getCpuCycles() / frequency;
+        EV << "scheduling new task" << omnetpp::endl;
+        EV << "task required cpu cycles: " << cpuCycles << omnetpp::endl;
+        EV << "server frequency: " << frequency << omnetpp::endl;
+        EV << "task running time: " << runningTime << omnetpp::endl;
+    }
 
     scheduleAt(omnetpp::simTime()+runningTime, endServiceMsg);
-    emit(busySignal, true);
 }
 
 Info *Processor::createEdgeServerInfoMsg()
 {
     Info *serverInfo = new Info();
-    serverInfo->setServerId(getParentModule()->getId());
+    serverInfo->setServerIdx(getParentModule()->getIndex());
     serverInfo->setServerName(getParentModule()->getName());
     serverInfo->setServerFrequency(frequency);
+    serverInfo->setServerCapacity(serverCapacity);
     serverInfo->setTaskCount(taskRunning ? waitingQueue.size() + 1 : waitingQueue.size());
     serverInfo->setTotalRequiredCycle(totalRequiredCycles);
+    serverInfo->setTotalMemoryConsumed(totalMemoryConsumed);
     return serverInfo;
 }

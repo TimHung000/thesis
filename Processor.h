@@ -11,9 +11,13 @@ class Processor : public omnetpp::cSimpleModule
 {
     private:
         std::list<Task*> waitingQueue;    // unfinshed or unprocessed tasks
-        Task *taskRunning = nullptr;                     // the task that is processing
+        Task *taskRunning = nullptr;      // the task that is processing
+        std::vector<double> frequencyList;
+        std::vector<double> serverCapacityVector;
         double frequency;
+        double serverCapacity;
         double totalRequiredCycles;
+        double totalMemoryConsumed;
 
 
         omnetpp::cMessage *endServiceMsg = nullptr;
@@ -27,12 +31,12 @@ class Processor : public omnetpp::cSimpleModule
         virtual void handleMessage(omnetpp::cMessage *msg) override;
         virtual void refreshDisplay() const override;
         virtual void finish() override;
-        void runNextTask();
-        Info *createEdgeServerInfoMsg();
+        void scheduling();
+
 
     public:
         ~Processor();
-
+        Info *createEdgeServerInfoMsg();
 
 };
 

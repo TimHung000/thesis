@@ -1,9 +1,17 @@
-#include "Sink.h"
+/*
+ * TaskCollection.cc
+ *
+ *  Created on: Feb 4, 2024
+ *      Author: tim
+ */
+
+#include "FinishedTaskCollector.h"
+
 #include "Task_m.h"
 
-Define_Module(Sink);
+Define_Module(FinishedTaskCollector);
 
-void Sink::initialize()
+void FinishedTaskCollector::initialize()
 {
     lifeTimeSignal = registerSignal("lifeTime");
     totalWaitingTimeSignal = registerSignal("totalWaitingTime");
@@ -15,14 +23,16 @@ void Sink::initialize()
     processedCyclesSignal = registerSignal("processedCycles");
     arrivingServerSignal = registerSignal("arrivingServer");
     runningServerSignal = registerSignal("runningServer");
+    hopCountSignal = registerSignal("hopCount");
+    isCompletedSignal = registerSignal("isCompleted");
 }
 
-void Sink::handleMessage(omnetpp::cMessage *msg)
+void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
 {
     Task* task = omnetpp::check_and_cast<Task*>(msg);
 
     // gather statistics
-    emit(lifeTimeSignal, omnetpp::simTime()- task->getCreationTime());
+    emit(lifeTimeSignal, omnetpp::simTime() - task->getCreationTime());
     emit(totalWaitingTimeSignal, task->getTotalWaitingTime());
     emit(totalProcessingTimeSignal, task->getTotalProcessingTime());
     emit(totalPropagationTimeSignal, task->getTotalPropagationTime());
@@ -32,11 +42,12 @@ void Sink::handleMessage(omnetpp::cMessage *msg)
     emit(processedCyclesSignal, task->getProcessedCycles());
     emit(arrivingServerSignal, task->getArrivingServer());
     emit(runningServerSignal, task->getRunningServer());
+    emit(hopCountSignal, task->getHopCount());
+    emit(isCompletedSignal, task->isCompleted());
     delete msg;
 }
 
-void Sink::finish()
+void FinishedTaskCollector::finish()
 {
     // TODO missing scalar statistics
 }
-

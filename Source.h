@@ -10,6 +10,7 @@
 #ifndef __SOURCE_H
 #define __SOURCE_H
 #include <omnetpp.h>
+#include <vector>
 
 class Task;
 
@@ -19,6 +20,9 @@ class Source : public omnetpp::cSimpleModule
         int taskCounter;
         std::string taskName;
         omnetpp::simsignal_t createdSignal;
+        std::vector<double> taskSizeVector;
+        std::vector<double> taskDeadlineVector;
+        std::vector<double> taskCpuCyclesVector;
 
     protected:
         virtual void initialize() override;

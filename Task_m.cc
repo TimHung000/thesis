@@ -150,15 +150,15 @@ void doParsimUnpacking(omnetpp::cCommBuffer *, T& t)
 
 }  // namespace omnetpp
 
-class StringVectorDescriptor : public omnetpp::cClassDescriptor
+class intVectorDescriptor : public omnetpp::cClassDescriptor
 {
   private:
     mutable const char **propertyNames;
     enum FieldConstants {
     };
   public:
-    StringVectorDescriptor();
-    virtual ~StringVectorDescriptor();
+    intVectorDescriptor();
+    virtual ~intVectorDescriptor();
 
     virtual bool doesSupport(omnetpp::cObject *obj) const override;
     virtual const char **getPropertyNames() const override;
@@ -184,24 +184,24 @@ class StringVectorDescriptor : public omnetpp::cClassDescriptor
     virtual void setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const override;
 };
 
-Register_ClassDescriptor(StringVectorDescriptor)
+Register_ClassDescriptor(intVectorDescriptor)
 
-StringVectorDescriptor::StringVectorDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(StringVector)), "")
+intVectorDescriptor::intVectorDescriptor() : omnetpp::cClassDescriptor(omnetpp::opp_typename(typeid(intVector)), "")
 {
     propertyNames = nullptr;
 }
 
-StringVectorDescriptor::~StringVectorDescriptor()
+intVectorDescriptor::~intVectorDescriptor()
 {
     delete[] propertyNames;
 }
 
-bool StringVectorDescriptor::doesSupport(omnetpp::cObject *obj) const
+bool intVectorDescriptor::doesSupport(omnetpp::cObject *obj) const
 {
-    return dynamic_cast<StringVector *>(obj)!=nullptr;
+    return dynamic_cast<intVector *>(obj)!=nullptr;
 }
 
-const char **StringVectorDescriptor::getPropertyNames() const
+const char **intVectorDescriptor::getPropertyNames() const
 {
     if (!propertyNames) {
         static const char *names[] = { "existingClass",  nullptr };
@@ -212,20 +212,20 @@ const char **StringVectorDescriptor::getPropertyNames() const
     return propertyNames;
 }
 
-const char *StringVectorDescriptor::getProperty(const char *propertyName) const
+const char *intVectorDescriptor::getProperty(const char *propertyName) const
 {
     if (!strcmp(propertyName, "existingClass")) return "";
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     return base ? base->getProperty(propertyName) : nullptr;
 }
 
-int StringVectorDescriptor::getFieldCount() const
+int intVectorDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     return base ? 0+base->getFieldCount() : 0;
 }
 
-unsigned int StringVectorDescriptor::getFieldTypeFlags(int field) const
+unsigned int intVectorDescriptor::getFieldTypeFlags(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -236,7 +236,7 @@ unsigned int StringVectorDescriptor::getFieldTypeFlags(int field) const
     return 0;
 }
 
-const char *StringVectorDescriptor::getFieldName(int field) const
+const char *intVectorDescriptor::getFieldName(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -247,13 +247,13 @@ const char *StringVectorDescriptor::getFieldName(int field) const
     return nullptr;
 }
 
-int StringVectorDescriptor::findField(const char *fieldName) const
+int intVectorDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     return base ? base->findField(fieldName) : -1;
 }
 
-const char *StringVectorDescriptor::getFieldTypeString(int field) const
+const char *intVectorDescriptor::getFieldTypeString(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -264,7 +264,7 @@ const char *StringVectorDescriptor::getFieldTypeString(int field) const
     return nullptr;
 }
 
-const char **StringVectorDescriptor::getFieldPropertyNames(int field) const
+const char **intVectorDescriptor::getFieldPropertyNames(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -277,7 +277,7 @@ const char **StringVectorDescriptor::getFieldPropertyNames(int field) const
     }
 }
 
-const char *StringVectorDescriptor::getFieldProperty(int field, const char *propertyName) const
+const char *intVectorDescriptor::getFieldProperty(int field, const char *propertyName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -290,7 +290,7 @@ const char *StringVectorDescriptor::getFieldProperty(int field, const char *prop
     }
 }
 
-int StringVectorDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field) const
+int intVectorDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -298,13 +298,13 @@ int StringVectorDescriptor::getFieldArraySize(omnetpp::any_ptr object, int field
             return base->getFieldArraySize(object, field);
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
         default: return 0;
     }
 }
 
-void StringVectorDescriptor::setFieldArraySize(omnetpp::any_ptr object, int field, int size) const
+void intVectorDescriptor::setFieldArraySize(omnetpp::any_ptr object, int field, int size) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -314,13 +314,13 @@ void StringVectorDescriptor::setFieldArraySize(omnetpp::any_ptr object, int fiel
         }
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot set array size of field %d of class 'StringVector'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set array size of field %d of class 'intVector'", field);
     }
 }
 
-const char *StringVectorDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr object, int field, int i) const
+const char *intVectorDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -328,13 +328,13 @@ const char *StringVectorDescriptor::getFieldDynamicTypeString(omnetpp::any_ptr o
             return base->getFieldDynamicTypeString(object,field,i);
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
         default: return nullptr;
     }
 }
 
-std::string StringVectorDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int field, int i) const
+std::string intVectorDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -342,13 +342,13 @@ std::string StringVectorDescriptor::getFieldValueAsString(omnetpp::any_ptr objec
             return base->getFieldValueAsString(object,field,i);
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
         default: return "";
     }
 }
 
-void StringVectorDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, int i, const char *value) const
+void intVectorDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, int i, const char *value) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -358,13 +358,13 @@ void StringVectorDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int 
         }
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'StringVector'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'intVector'", field);
     }
 }
 
-omnetpp::cValue StringVectorDescriptor::getFieldValue(omnetpp::any_ptr object, int field, int i) const
+omnetpp::cValue intVectorDescriptor::getFieldValue(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -372,13 +372,13 @@ omnetpp::cValue StringVectorDescriptor::getFieldValue(omnetpp::any_ptr object, i
             return base->getFieldValue(object,field,i);
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'StringVector' as cValue -- field index out of range?", field);
+        default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'intVector' as cValue -- field index out of range?", field);
     }
 }
 
-void StringVectorDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, const omnetpp::cValue& value) const
+void intVectorDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, const omnetpp::cValue& value) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -388,13 +388,13 @@ void StringVectorDescriptor::setFieldValue(omnetpp::any_ptr object, int field, i
         }
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'StringVector'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'intVector'", field);
     }
 }
 
-const char *StringVectorDescriptor::getFieldStructName(int field) const
+const char *intVectorDescriptor::getFieldStructName(int field) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -405,7 +405,7 @@ const char *StringVectorDescriptor::getFieldStructName(int field) const
     return nullptr;
 }
 
-omnetpp::any_ptr StringVectorDescriptor::getFieldStructValuePointer(omnetpp::any_ptr object, int field, int i) const
+omnetpp::any_ptr intVectorDescriptor::getFieldStructValuePointer(omnetpp::any_ptr object, int field, int i) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -413,13 +413,13 @@ omnetpp::any_ptr StringVectorDescriptor::getFieldStructValuePointer(omnetpp::any
             return base->getFieldStructValuePointer(object, field, i);
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
         default: return omnetpp::any_ptr(nullptr);
     }
 }
 
-void StringVectorDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const
+void intVectorDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object, int field, int i, omnetpp::any_ptr ptr) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     if (base) {
@@ -429,9 +429,9 @@ void StringVectorDescriptor::setFieldStructValuePointer(omnetpp::any_ptr object,
         }
         field -= base->getFieldCount();
     }
-    StringVector *pp = omnetpp::fromAnyPtr<StringVector>(object); (void)pp;
+    intVector *pp = omnetpp::fromAnyPtr<intVector>(object); (void)pp;
     switch (field) {
-        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'StringVector'", field);
+        default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'intVector'", field);
     }
 }
 
@@ -470,6 +470,9 @@ void Task::copy(const Task& other)
     this->processedCycles = other.processedCycles;
     this->arrivingServer = other.arrivingServer;
     this->runningServer = other.runningServer;
+    this->destinationServer = other.destinationServer;
+    this->hopCount = other.hopCount;
+    this->isCompleted_ = other.isCompleted_;
     this->hopPath = other.hopPath;
 }
 
@@ -486,6 +489,9 @@ void Task::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->processedCycles);
     doParsimPacking(b,this->arrivingServer);
     doParsimPacking(b,this->runningServer);
+    doParsimPacking(b,this->destinationServer);
+    doParsimPacking(b,this->hopCount);
+    doParsimPacking(b,this->isCompleted_);
     doParsimPacking(b,this->hopPath);
 }
 
@@ -502,6 +508,9 @@ void Task::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->processedCycles);
     doParsimUnpacking(b,this->arrivingServer);
     doParsimUnpacking(b,this->runningServer);
+    doParsimUnpacking(b,this->destinationServer);
+    doParsimUnpacking(b,this->hopCount);
+    doParsimUnpacking(b,this->isCompleted_);
     doParsimUnpacking(b,this->hopPath);
 }
 
@@ -605,12 +614,42 @@ void Task::setRunningServer(int runningServer)
     this->runningServer = runningServer;
 }
 
-const StringVector& Task::getHopPath() const
+int Task::getDestinationServer() const
+{
+    return this->destinationServer;
+}
+
+void Task::setDestinationServer(int destinationServer)
+{
+    this->destinationServer = destinationServer;
+}
+
+int Task::getHopCount() const
+{
+    return this->hopCount;
+}
+
+void Task::setHopCount(int hopCount)
+{
+    this->hopCount = hopCount;
+}
+
+bool Task::isCompleted() const
+{
+    return this->isCompleted_;
+}
+
+void Task::setIsCompleted(bool isCompleted)
+{
+    this->isCompleted_ = isCompleted;
+}
+
+const intVector& Task::getHopPath() const
 {
     return this->hopPath;
 }
 
-void Task::setHopPath(const StringVector& hopPath)
+void Task::setHopPath(const intVector& hopPath)
 {
     this->hopPath = hopPath;
 }
@@ -630,6 +669,9 @@ class TaskDescriptor : public omnetpp::cClassDescriptor
         FIELD_processedCycles,
         FIELD_arrivingServer,
         FIELD_runningServer,
+        FIELD_destinationServer,
+        FIELD_hopCount,
+        FIELD_isCompleted,
         FIELD_hopPath,
     };
   public:
@@ -697,7 +739,7 @@ const char *TaskDescriptor::getProperty(const char *propertyName) const
 int TaskDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 11+base->getFieldCount() : 11;
+    return base ? 14+base->getFieldCount() : 14;
 }
 
 unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
@@ -719,9 +761,12 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_processedCycles
         FD_ISEDITABLE,    // FIELD_arrivingServer
         FD_ISEDITABLE,    // FIELD_runningServer
+        FD_ISEDITABLE,    // FIELD_destinationServer
+        FD_ISEDITABLE,    // FIELD_hopCount
+        FD_ISEDITABLE,    // FIELD_isCompleted
         FD_ISCOMPOUND,    // FIELD_hopPath
     };
-    return (field >= 0 && field < 11) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 14) ? fieldTypeFlags[field] : 0;
 }
 
 const char *TaskDescriptor::getFieldName(int field) const
@@ -743,9 +788,12 @@ const char *TaskDescriptor::getFieldName(int field) const
         "processedCycles",
         "arrivingServer",
         "runningServer",
+        "destinationServer",
+        "hopCount",
+        "isCompleted",
         "hopPath",
     };
-    return (field >= 0 && field < 11) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 14) ? fieldNames[field] : nullptr;
 }
 
 int TaskDescriptor::findField(const char *fieldName) const
@@ -762,7 +810,10 @@ int TaskDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "processedCycles") == 0) return baseIndex + 7;
     if (strcmp(fieldName, "arrivingServer") == 0) return baseIndex + 8;
     if (strcmp(fieldName, "runningServer") == 0) return baseIndex + 9;
-    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 10;
+    if (strcmp(fieldName, "destinationServer") == 0) return baseIndex + 10;
+    if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 11;
+    if (strcmp(fieldName, "isCompleted") == 0) return baseIndex + 12;
+    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 13;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -785,9 +836,12 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "double",    // FIELD_processedCycles
         "int",    // FIELD_arrivingServer
         "int",    // FIELD_runningServer
-        "StringVector",    // FIELD_hopPath
+        "int",    // FIELD_destinationServer
+        "int",    // FIELD_hopCount
+        "bool",    // FIELD_isCompleted
+        "intVector",    // FIELD_hopPath
     };
-    return (field >= 0 && field < 11) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 14) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **TaskDescriptor::getFieldPropertyNames(int field) const
@@ -880,6 +934,9 @@ std::string TaskDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_processedCycles: return double2string(pp->getProcessedCycles());
         case FIELD_arrivingServer: return long2string(pp->getArrivingServer());
         case FIELD_runningServer: return long2string(pp->getRunningServer());
+        case FIELD_destinationServer: return long2string(pp->getDestinationServer());
+        case FIELD_hopCount: return long2string(pp->getHopCount());
+        case FIELD_isCompleted: return bool2string(pp->isCompleted());
         case FIELD_hopPath: return "";
         default: return "";
     }
@@ -907,6 +964,9 @@ void TaskDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_processedCycles: pp->setProcessedCycles(string2double(value)); break;
         case FIELD_arrivingServer: pp->setArrivingServer(string2long(value)); break;
         case FIELD_runningServer: pp->setRunningServer(string2long(value)); break;
+        case FIELD_destinationServer: pp->setDestinationServer(string2long(value)); break;
+        case FIELD_hopCount: pp->setHopCount(string2long(value)); break;
+        case FIELD_isCompleted: pp->setIsCompleted(string2bool(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Task'", field);
     }
 }
@@ -931,6 +991,9 @@ omnetpp::cValue TaskDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_processedCycles: return pp->getProcessedCycles();
         case FIELD_arrivingServer: return pp->getArrivingServer();
         case FIELD_runningServer: return pp->getRunningServer();
+        case FIELD_destinationServer: return pp->getDestinationServer();
+        case FIELD_hopCount: return pp->getHopCount();
+        case FIELD_isCompleted: return pp->isCompleted();
         case FIELD_hopPath: return omnetpp::toAnyPtr(&pp->getHopPath()); break;
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'Task' as cValue -- field index out of range?", field);
     }
@@ -958,6 +1021,9 @@ void TaskDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
         case FIELD_processedCycles: pp->setProcessedCycles(value.doubleValue()); break;
         case FIELD_arrivingServer: pp->setArrivingServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_runningServer: pp->setRunningServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_destinationServer: pp->setDestinationServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_hopCount: pp->setHopCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_isCompleted: pp->setIsCompleted(value.boolValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Task'", field);
     }
 }
@@ -971,7 +1037,7 @@ const char *TaskDescriptor::getFieldStructName(int field) const
         field -= base->getFieldCount();
     }
     switch (field) {
-        case FIELD_hopPath: return omnetpp::opp_typename(typeid(StringVector));
+        case FIELD_hopPath: return omnetpp::opp_typename(typeid(intVector));
         default: return nullptr;
     };
 }

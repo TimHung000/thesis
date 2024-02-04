@@ -19,12 +19,11 @@
 class Task;
 // cplusplus {{
 #include <vector>
-#include <string>
-typedef std::vector<std::string> StringVector;
+typedef std::vector<int> intVector;
 // }}
 
 /**
- * Class generated from <tt>Task.msg:15</tt> by opp_msgtool.
+ * Class generated from <tt>Task.msg:14</tt> by opp_msgtool.
  * <pre>
  * //
  * // Task message definition for queueing framework
@@ -35,13 +34,16 @@ typedef std::vector<std::string> StringVector;
  *     simtime_t totalWaitingTime; 	    // total time spent on waiting in queues
  *     simtime_t totalProcessingTime;      // total time spent in processing
  *     simtime_t totalPropagationTime;     // total time spent in propagation
- *     simtime_t deadline;				 // task need to be finisehd before this
- *     double taskSize = 0;
+ *     simtime_t deadline;				 	// task need to finish before creattionTime + deadline
+ *     double taskSize = 0;				// bytes
  *     double cpuCycles = 1000000000;
  *     double processedCycles = 0;
- *     int arrivingServer;
- *     int runningServer;
- *     StringVector hopPath;
+ *     int arrivingServer = -1;
+ *     int runningServer = -1;
+ *     int destinationServer = -1;
+ *     int hopCount = 0;
+ *     bool isCompleted = false;
+ *     intVector hopPath;
  * }
  * </pre>
  */
@@ -56,9 +58,12 @@ class Task : public ::omnetpp::cPacket
     double taskSize = 0;
     double cpuCycles = 1000000000;
     double processedCycles = 0;
-    int arrivingServer = 0;
-    int runningServer = 0;
-    StringVector hopPath;
+    int arrivingServer = -1;
+    int runningServer = -1;
+    int destinationServer = -1;
+    int hopCount = 0;
+    bool isCompleted_ = false;
+    intVector hopPath;
 
   private:
     void copy(const Task& other);
@@ -105,9 +110,18 @@ class Task : public ::omnetpp::cPacket
     virtual int getRunningServer() const;
     virtual void setRunningServer(int runningServer);
 
-    virtual const StringVector& getHopPath() const;
-    virtual StringVector& getHopPathForUpdate() { return const_cast<StringVector&>(const_cast<Task*>(this)->getHopPath());}
-    virtual void setHopPath(const StringVector& hopPath);
+    virtual int getDestinationServer() const;
+    virtual void setDestinationServer(int destinationServer);
+
+    virtual int getHopCount() const;
+    virtual void setHopCount(int hopCount);
+
+    virtual bool isCompleted() const;
+    virtual void setIsCompleted(bool isCompleted);
+
+    virtual const intVector& getHopPath() const;
+    virtual intVector& getHopPathForUpdate() { return const_cast<intVector&>(const_cast<Task*>(this)->getHopPath());}
+    virtual void setHopPath(const intVector& hopPath);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const Task& obj) {obj.parsimPack(b);}
@@ -116,8 +130,8 @@ inline void doParsimUnpacking(omnetpp::cCommBuffer *b, Task& obj) {obj.parsimUnp
 
 namespace omnetpp {
 
-inline any_ptr toAnyPtr(const StringVector *p) {if (auto obj = as_cObject(p)) return any_ptr(obj); else return any_ptr(p);}
-template<> inline StringVector *fromAnyPtr(any_ptr ptr) { return ptr.get<StringVector>(); }
+inline any_ptr toAnyPtr(const intVector *p) {if (auto obj = as_cObject(p)) return any_ptr(obj); else return any_ptr(p);}
+template<> inline intVector *fromAnyPtr(any_ptr ptr) { return ptr.get<intVector>(); }
 template<> inline Task *fromAnyPtr(any_ptr ptr) { return check_and_cast<Task*>(ptr.get<cObject>()); }
 
 }  // namespace omnetpp

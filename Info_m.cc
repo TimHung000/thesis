@@ -175,41 +175,47 @@ Info& Info::operator=(const Info& other)
 
 void Info::copy(const Info& other)
 {
-    this->serverId = other.serverId;
+    this->serverIdx = other.serverIdx;
     this->serverName = other.serverName;
     this->serverFrequency = other.serverFrequency;
+    this->serverCapacity = other.serverCapacity;
     this->taskCount = other.taskCount;
     this->totalRequiredCycle = other.totalRequiredCycle;
+    this->totalMemoryConsumed = other.totalMemoryConsumed;
 }
 
 void Info::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::omnetpp::cMessage::parsimPack(b);
-    doParsimPacking(b,this->serverId);
+    doParsimPacking(b,this->serverIdx);
     doParsimPacking(b,this->serverName);
     doParsimPacking(b,this->serverFrequency);
+    doParsimPacking(b,this->serverCapacity);
     doParsimPacking(b,this->taskCount);
     doParsimPacking(b,this->totalRequiredCycle);
+    doParsimPacking(b,this->totalMemoryConsumed);
 }
 
 void Info::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::omnetpp::cMessage::parsimUnpack(b);
-    doParsimUnpacking(b,this->serverId);
+    doParsimUnpacking(b,this->serverIdx);
     doParsimUnpacking(b,this->serverName);
     doParsimUnpacking(b,this->serverFrequency);
+    doParsimUnpacking(b,this->serverCapacity);
     doParsimUnpacking(b,this->taskCount);
     doParsimUnpacking(b,this->totalRequiredCycle);
+    doParsimUnpacking(b,this->totalMemoryConsumed);
 }
 
-int Info::getServerId() const
+int Info::getServerIdx() const
 {
-    return this->serverId;
+    return this->serverIdx;
 }
 
-void Info::setServerId(int serverId)
+void Info::setServerIdx(int serverIdx)
 {
-    this->serverId = serverId;
+    this->serverIdx = serverIdx;
 }
 
 const char * Info::getServerName() const
@@ -232,6 +238,16 @@ void Info::setServerFrequency(double serverFrequency)
     this->serverFrequency = serverFrequency;
 }
 
+double Info::getServerCapacity() const
+{
+    return this->serverCapacity;
+}
+
+void Info::setServerCapacity(double serverCapacity)
+{
+    this->serverCapacity = serverCapacity;
+}
+
 int Info::getTaskCount() const
 {
     return this->taskCount;
@@ -252,16 +268,28 @@ void Info::setTotalRequiredCycle(double totalRequiredCycle)
     this->totalRequiredCycle = totalRequiredCycle;
 }
 
+double Info::getTotalMemoryConsumed() const
+{
+    return this->totalMemoryConsumed;
+}
+
+void Info::setTotalMemoryConsumed(double totalMemoryConsumed)
+{
+    this->totalMemoryConsumed = totalMemoryConsumed;
+}
+
 class InfoDescriptor : public omnetpp::cClassDescriptor
 {
   private:
     mutable const char **propertyNames;
     enum FieldConstants {
-        FIELD_serverId,
+        FIELD_serverIdx,
         FIELD_serverName,
         FIELD_serverFrequency,
+        FIELD_serverCapacity,
         FIELD_taskCount,
         FIELD_totalRequiredCycle,
+        FIELD_totalMemoryConsumed,
     };
   public:
     InfoDescriptor();
@@ -328,7 +356,7 @@ const char *InfoDescriptor::getProperty(const char *propertyName) const
 int InfoDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 5+base->getFieldCount() : 5;
+    return base ? 7+base->getFieldCount() : 7;
 }
 
 unsigned int InfoDescriptor::getFieldTypeFlags(int field) const
@@ -340,13 +368,15 @@ unsigned int InfoDescriptor::getFieldTypeFlags(int field) const
         field -= base->getFieldCount();
     }
     static unsigned int fieldTypeFlags[] = {
-        FD_ISEDITABLE,    // FIELD_serverId
+        FD_ISEDITABLE,    // FIELD_serverIdx
         FD_ISEDITABLE,    // FIELD_serverName
         FD_ISEDITABLE,    // FIELD_serverFrequency
+        FD_ISEDITABLE,    // FIELD_serverCapacity
         FD_ISEDITABLE,    // FIELD_taskCount
         FD_ISEDITABLE,    // FIELD_totalRequiredCycle
+        FD_ISEDITABLE,    // FIELD_totalMemoryConsumed
     };
-    return (field >= 0 && field < 5) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 7) ? fieldTypeFlags[field] : 0;
 }
 
 const char *InfoDescriptor::getFieldName(int field) const
@@ -358,24 +388,28 @@ const char *InfoDescriptor::getFieldName(int field) const
         field -= base->getFieldCount();
     }
     static const char *fieldNames[] = {
-        "serverId",
+        "serverIdx",
         "serverName",
         "serverFrequency",
+        "serverCapacity",
         "taskCount",
         "totalRequiredCycle",
+        "totalMemoryConsumed",
     };
-    return (field >= 0 && field < 5) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 7) ? fieldNames[field] : nullptr;
 }
 
 int InfoDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
     int baseIndex = base ? base->getFieldCount() : 0;
-    if (strcmp(fieldName, "serverId") == 0) return baseIndex + 0;
+    if (strcmp(fieldName, "serverIdx") == 0) return baseIndex + 0;
     if (strcmp(fieldName, "serverName") == 0) return baseIndex + 1;
     if (strcmp(fieldName, "serverFrequency") == 0) return baseIndex + 2;
-    if (strcmp(fieldName, "taskCount") == 0) return baseIndex + 3;
-    if (strcmp(fieldName, "totalRequiredCycle") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "serverCapacity") == 0) return baseIndex + 3;
+    if (strcmp(fieldName, "taskCount") == 0) return baseIndex + 4;
+    if (strcmp(fieldName, "totalRequiredCycle") == 0) return baseIndex + 5;
+    if (strcmp(fieldName, "totalMemoryConsumed") == 0) return baseIndex + 6;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -388,13 +422,15 @@ const char *InfoDescriptor::getFieldTypeString(int field) const
         field -= base->getFieldCount();
     }
     static const char *fieldTypeStrings[] = {
-        "int",    // FIELD_serverId
+        "int",    // FIELD_serverIdx
         "string",    // FIELD_serverName
         "double",    // FIELD_serverFrequency
+        "double",    // FIELD_serverCapacity
         "int",    // FIELD_taskCount
         "double",    // FIELD_totalRequiredCycle
+        "double",    // FIELD_totalMemoryConsumed
     };
-    return (field >= 0 && field < 5) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 7) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **InfoDescriptor::getFieldPropertyNames(int field) const
@@ -477,11 +513,13 @@ std::string InfoDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
     }
     Info *pp = omnetpp::fromAnyPtr<Info>(object); (void)pp;
     switch (field) {
-        case FIELD_serverId: return long2string(pp->getServerId());
+        case FIELD_serverIdx: return long2string(pp->getServerIdx());
         case FIELD_serverName: return oppstring2string(pp->getServerName());
         case FIELD_serverFrequency: return double2string(pp->getServerFrequency());
+        case FIELD_serverCapacity: return double2string(pp->getServerCapacity());
         case FIELD_taskCount: return long2string(pp->getTaskCount());
         case FIELD_totalRequiredCycle: return double2string(pp->getTotalRequiredCycle());
+        case FIELD_totalMemoryConsumed: return double2string(pp->getTotalMemoryConsumed());
         default: return "";
     }
 }
@@ -498,11 +536,13 @@ void InfoDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
     }
     Info *pp = omnetpp::fromAnyPtr<Info>(object); (void)pp;
     switch (field) {
-        case FIELD_serverId: pp->setServerId(string2long(value)); break;
+        case FIELD_serverIdx: pp->setServerIdx(string2long(value)); break;
         case FIELD_serverName: pp->setServerName((value)); break;
         case FIELD_serverFrequency: pp->setServerFrequency(string2double(value)); break;
+        case FIELD_serverCapacity: pp->setServerCapacity(string2double(value)); break;
         case FIELD_taskCount: pp->setTaskCount(string2long(value)); break;
         case FIELD_totalRequiredCycle: pp->setTotalRequiredCycle(string2double(value)); break;
+        case FIELD_totalMemoryConsumed: pp->setTotalMemoryConsumed(string2double(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Info'", field);
     }
 }
@@ -517,11 +557,13 @@ omnetpp::cValue InfoDescriptor::getFieldValue(omnetpp::any_ptr object, int field
     }
     Info *pp = omnetpp::fromAnyPtr<Info>(object); (void)pp;
     switch (field) {
-        case FIELD_serverId: return pp->getServerId();
+        case FIELD_serverIdx: return pp->getServerIdx();
         case FIELD_serverName: return pp->getServerName();
         case FIELD_serverFrequency: return pp->getServerFrequency();
+        case FIELD_serverCapacity: return pp->getServerCapacity();
         case FIELD_taskCount: return pp->getTaskCount();
         case FIELD_totalRequiredCycle: return pp->getTotalRequiredCycle();
+        case FIELD_totalMemoryConsumed: return pp->getTotalMemoryConsumed();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'Info' as cValue -- field index out of range?", field);
     }
 }
@@ -538,11 +580,13 @@ void InfoDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
     }
     Info *pp = omnetpp::fromAnyPtr<Info>(object); (void)pp;
     switch (field) {
-        case FIELD_serverId: pp->setServerId(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_serverIdx: pp->setServerIdx(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_serverName: pp->setServerName(value.stringValue()); break;
         case FIELD_serverFrequency: pp->setServerFrequency(value.doubleValue()); break;
+        case FIELD_serverCapacity: pp->setServerCapacity(value.doubleValue()); break;
         case FIELD_taskCount: pp->setTaskCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_totalRequiredCycle: pp->setTotalRequiredCycle(value.doubleValue()); break;
+        case FIELD_totalMemoryConsumed: pp->setTotalMemoryConsumed(value.doubleValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Info'", field);
     }
 }

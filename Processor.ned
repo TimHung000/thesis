@@ -9,8 +9,7 @@ simple Processor
     gates:
         input in;
         output infoOut;        
-        output taskCompleteOut;
-        output taskDropOut;
+        output taskFinishedOut;
 }
 
 

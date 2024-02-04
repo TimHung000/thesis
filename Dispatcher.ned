@@ -16,12 +16,13 @@
 simple Dispatcher
 {
     parameters:
+        int memoryThreshold = 80;
+        int maximumHop = 10;
         @display("i=abstract/dispatcher");
         
     gates:
         input taskIn[];
         output myServerOut;
         output otherEdgeServerOut[];
-        output drop;
-        input infoIn;     
+        output taskFinishedOut;
 }
