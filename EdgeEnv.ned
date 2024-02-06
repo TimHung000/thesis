@@ -22,8 +22,6 @@ network EdgeEnv
         int rows = 5;
         int cols = 5;
         int total = 25;
-        edgeServer[0].numUsers = 500;
-        edgeServer[24].numUsers = 500;
     submodules:
         edgeServer[rows * cols]: EdgeServer {
             id = index + 1;

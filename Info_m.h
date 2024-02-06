@@ -18,7 +18,7 @@
 
 class Info;
 /**
- * Class generated from <tt>Info.msg:17</tt> by opp_msgtool.
+ * Class generated from <tt>Info.msg:2</tt> by opp_msgtool.
  * <pre>
  * message Info
  * {
@@ -29,6 +29,8 @@ class Info;
  *     int taskCount;
  *     double totalRequiredCycle;
  *     double totalMemoryConsumed;
+ *     int hopCount;
+ *     simtime_t creationTime;
  * }
  * </pre>
  */
@@ -42,6 +44,8 @@ class Info : public ::omnetpp::cMessage
     int taskCount = 0;
     double totalRequiredCycle = 0;
     double totalMemoryConsumed = 0;
+    int hopCount = 0;
+    omnetpp::simtime_t creationTime = SIMTIME_ZERO;
 
   private:
     void copy(const Info& other);
@@ -78,6 +82,12 @@ class Info : public ::omnetpp::cMessage
 
     virtual double getTotalMemoryConsumed() const;
     virtual void setTotalMemoryConsumed(double totalMemoryConsumed);
+
+    virtual int getHopCount() const;
+    virtual void setHopCount(int hopCount);
+
+    virtual omnetpp::simtime_t getCreationTime() const;
+    virtual void setCreationTime(omnetpp::simtime_t creationTime);
 };
 
 inline void doParsimPacking(omnetpp::cCommBuffer *b, const Info& obj) {obj.parsimPack(b);}

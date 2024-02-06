@@ -10,11 +10,10 @@
 class Dispatcher : public omnetpp::cSimpleModule
 {
     private:
-        std::unordered_map<int, Info*> edgeServerStatus;
-        std::vector<int> connectedServerIndices;
-        std::vector<omnetpp::cGate*> connectedGates;
+        std::vector<int> neighborSevers;
         int maximumHop;
-        int memoryThreshold;
+        double memoryThreshold;
+        int serverId;
     protected:
         virtual void initialize() override;
         virtual void handleMessage(omnetpp::cMessage *msg) override;

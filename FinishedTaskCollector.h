@@ -6,7 +6,7 @@
 class FinishedTaskCollector : public omnetpp::cSimpleModule
 {
   private:
-    omnetpp::simsignal_t lifeTimeSignal;
+    omnetpp::simsignal_t creationTimeSignal;
     omnetpp::simsignal_t totalWaitingTimeSignal;
     omnetpp::simsignal_t totalProcessingTimeSignal;
     omnetpp::simsignal_t totalPropagationTimeSignal;

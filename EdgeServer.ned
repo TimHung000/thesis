@@ -5,7 +5,7 @@ module EdgeServer
 {
     parameters:
         int id;
-        int numUsers = default(1);
+        int numUsers;
         @display("i=misc/node_vs,gold");
     gates:
         inout ports[];
@@ -15,13 +15,8 @@ module EdgeServer
         users[numUsers]: Source {
             @display("p=60,135");
         }
-        otherServer: Merge {
-            @display("p=60,239");
-            gates:
-                in[sizeof(parent.ports)];
-        }
         processor: Processor {
-            @display("p=323,135");
+            @display("p=403,135");
         }
         infoHandler: InfoHandler {
             @display("p=437,239");
@@ -29,40 +24,43 @@ module EdgeServer
                 otherEdgeServerInfoPorts[sizeof(parent.infoPorts)];
         }
         dispatcher: Dispatcher {
-            @display("p=186,135");
-            gates:
-                otherEdgeServerOut[sizeof(parent.ports)];
+            @display("p=251,135");
         }
         finishedTaskCollector: Merge {
             @display("p=290,260");
         }
+        routing: Routing {
+            @display("p=138,82");
+            gates:
+                in[sizeof(parent.ports)];
+                out[sizeof(parent.ports)];
+        }
     connections:
         // random genearate tasks
         for i=0..sizeof(users) - 1 {
-            users[i].out --> IdealChannel --> dispatcher.taskIn++;
+            users[i].out --> IdealChannel --> routing.localIn++;
         }
 
-		// offloaded tasks from other edge server
-        for i=0..sizeof(ports) - 1 {
-            ports$i[i] --> IdealChannel --> otherServer.in[i];
-        }
-        otherServer.out --> IdealChannel --> dispatcher.taskIn++;
+        // task destination is this server, so dispatcher need to decide where task should go
+        routing.localOut --> IdealChannel --> dispatcher.taskIn++;
 
-        // offload the task to this edger server or others
-        dispatcher.myServerOut --> IdealChannel --> processor.in;
         for i=0..sizeof(ports) - 1 {
-            dispatcher.otherEdgeServerOut[i] --> IdealChannel --> ports$o[i];
+            // other server offload task to this server
+            ports$i[i] --> IdealChannel --> routing.in[i];
+            // offload task to other server
+            routing.out[i] --> IdealChannel --> ports$o[i];
         }
-        
-        
-        
+
+        dispatcher.offloadOut --> IdealChannel --> routing.localIn++;
+        dispatcher.localProcessOut --> IdealChannel --> processor.in;
+        dispatcher.taskFinishedOut --> IdealChannel --> finishedTaskCollector.in++;
+
         processor.infoOut --> IdealChannel --> infoHandler.processorInfoIn;
         for i=0..sizeof(infoPorts) - 1 {
             infoPorts[i] <--> IdealChannel <--> infoHandler.otherEdgeServerInfoPorts[i];
         }
-        
+
         // completed and drop task collection
         processor.taskFinishedOut --> IdealChannel --> finishedTaskCollector.in++;
-        dispatcher.taskFinishedOut --> IdealChannel --> finishedTaskCollector.in++;
         finishedTaskCollector.out --> IdealChannel --> taskFinishedOut;
 }

@@ -182,6 +182,8 @@ void Info::copy(const Info& other)
     this->taskCount = other.taskCount;
     this->totalRequiredCycle = other.totalRequiredCycle;
     this->totalMemoryConsumed = other.totalMemoryConsumed;
+    this->hopCount = other.hopCount;
+    this->creationTime = other.creationTime;
 }
 
 void Info::parsimPack(omnetpp::cCommBuffer *b) const
@@ -194,6 +196,8 @@ void Info::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->taskCount);
     doParsimPacking(b,this->totalRequiredCycle);
     doParsimPacking(b,this->totalMemoryConsumed);
+    doParsimPacking(b,this->hopCount);
+    doParsimPacking(b,this->creationTime);
 }
 
 void Info::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -206,6 +210,8 @@ void Info::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->taskCount);
     doParsimUnpacking(b,this->totalRequiredCycle);
     doParsimUnpacking(b,this->totalMemoryConsumed);
+    doParsimUnpacking(b,this->hopCount);
+    doParsimUnpacking(b,this->creationTime);
 }
 
 int Info::getServerIdx() const
@@ -278,6 +284,26 @@ void Info::setTotalMemoryConsumed(double totalMemoryConsumed)
     this->totalMemoryConsumed = totalMemoryConsumed;
 }
 
+int Info::getHopCount() const
+{
+    return this->hopCount;
+}
+
+void Info::setHopCount(int hopCount)
+{
+    this->hopCount = hopCount;
+}
+
+omnetpp::simtime_t Info::getCreationTime() const
+{
+    return this->creationTime;
+}
+
+void Info::setCreationTime(omnetpp::simtime_t creationTime)
+{
+    this->creationTime = creationTime;
+}
+
 class InfoDescriptor : public omnetpp::cClassDescriptor
 {
   private:
@@ -290,6 +316,8 @@ class InfoDescriptor : public omnetpp::cClassDescriptor
         FIELD_taskCount,
         FIELD_totalRequiredCycle,
         FIELD_totalMemoryConsumed,
+        FIELD_hopCount,
+        FIELD_creationTime,
     };
   public:
     InfoDescriptor();
@@ -356,7 +384,7 @@ const char *InfoDescriptor::getProperty(const char *propertyName) const
 int InfoDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 7+base->getFieldCount() : 7;
+    return base ? 9+base->getFieldCount() : 9;
 }
 
 unsigned int InfoDescriptor::getFieldTypeFlags(int field) const
@@ -375,8 +403,10 @@ unsigned int InfoDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_taskCount
         FD_ISEDITABLE,    // FIELD_totalRequiredCycle
         FD_ISEDITABLE,    // FIELD_totalMemoryConsumed
+        FD_ISEDITABLE,    // FIELD_hopCount
+        FD_ISEDITABLE,    // FIELD_creationTime
     };
-    return (field >= 0 && field < 7) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 9) ? fieldTypeFlags[field] : 0;
 }
 
 const char *InfoDescriptor::getFieldName(int field) const
@@ -395,8 +425,10 @@ const char *InfoDescriptor::getFieldName(int field) const
         "taskCount",
         "totalRequiredCycle",
         "totalMemoryConsumed",
+        "hopCount",
+        "creationTime",
     };
-    return (field >= 0 && field < 7) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 9) ? fieldNames[field] : nullptr;
 }
 
 int InfoDescriptor::findField(const char *fieldName) const
@@ -410,6 +442,8 @@ int InfoDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "taskCount") == 0) return baseIndex + 4;
     if (strcmp(fieldName, "totalRequiredCycle") == 0) return baseIndex + 5;
     if (strcmp(fieldName, "totalMemoryConsumed") == 0) return baseIndex + 6;
+    if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 7;
+    if (strcmp(fieldName, "creationTime") == 0) return baseIndex + 8;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -429,8 +463,10 @@ const char *InfoDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_taskCount
         "double",    // FIELD_totalRequiredCycle
         "double",    // FIELD_totalMemoryConsumed
+        "int",    // FIELD_hopCount
+        "omnetpp::simtime_t",    // FIELD_creationTime
     };
-    return (field >= 0 && field < 7) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 9) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **InfoDescriptor::getFieldPropertyNames(int field) const
@@ -520,6 +556,8 @@ std::string InfoDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_taskCount: return long2string(pp->getTaskCount());
         case FIELD_totalRequiredCycle: return double2string(pp->getTotalRequiredCycle());
         case FIELD_totalMemoryConsumed: return double2string(pp->getTotalMemoryConsumed());
+        case FIELD_hopCount: return long2string(pp->getHopCount());
+        case FIELD_creationTime: return simtime2string(pp->getCreationTime());
         default: return "";
     }
 }
@@ -543,6 +581,8 @@ void InfoDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_taskCount: pp->setTaskCount(string2long(value)); break;
         case FIELD_totalRequiredCycle: pp->setTotalRequiredCycle(string2double(value)); break;
         case FIELD_totalMemoryConsumed: pp->setTotalMemoryConsumed(string2double(value)); break;
+        case FIELD_hopCount: pp->setHopCount(string2long(value)); break;
+        case FIELD_creationTime: pp->setCreationTime(string2simtime(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Info'", field);
     }
 }
@@ -564,6 +604,8 @@ omnetpp::cValue InfoDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_taskCount: return pp->getTaskCount();
         case FIELD_totalRequiredCycle: return pp->getTotalRequiredCycle();
         case FIELD_totalMemoryConsumed: return pp->getTotalMemoryConsumed();
+        case FIELD_hopCount: return pp->getHopCount();
+        case FIELD_creationTime: return pp->getCreationTime().dbl();
         default: throw omnetpp::cRuntimeError("Cannot return field %d of class 'Info' as cValue -- field index out of range?", field);
     }
 }
@@ -587,6 +629,8 @@ void InfoDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
         case FIELD_taskCount: pp->setTaskCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_totalRequiredCycle: pp->setTotalRequiredCycle(value.doubleValue()); break;
         case FIELD_totalMemoryConsumed: pp->setTotalMemoryConsumed(value.doubleValue()); break;
+        case FIELD_hopCount: pp->setHopCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
+        case FIELD_creationTime: pp->setCreationTime(value.doubleValue()); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Info'", field);
     }
 }

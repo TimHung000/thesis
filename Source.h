@@ -17,12 +17,21 @@ class Task;
 class Source : public omnetpp::cSimpleModule
 {
     private:
+        int serverId;
+        int userId;
         int taskCounter;
-        std::string taskName;
-        omnetpp::simsignal_t createdSignal;
         std::vector<double> taskSizeVector;
         std::vector<double> taskDeadlineVector;
         std::vector<double> taskCpuCyclesVector;
+        double minTaskSize;
+        double maxTaskSize;
+        double minDeadline;
+        double maxDeadline;
+        double minCPUCycle;
+        double maxCPUCycle;
+        int minSubTaskCount;
+        int maxSubTaskCount;
+
 
     protected:
         virtual void initialize() override;

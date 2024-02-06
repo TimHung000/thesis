@@ -8,12 +8,14 @@
 #include "FinishedTaskCollector.h"
 
 #include "Task_m.h"
+#include <string>
+#include <sstream>
 
 Define_Module(FinishedTaskCollector);
 
 void FinishedTaskCollector::initialize()
 {
-    lifeTimeSignal = registerSignal("lifeTime");
+    creationTimeSignal = registerSignal("creationTime");
     totalWaitingTimeSignal = registerSignal("totalWaitingTime");
     totalProcessingTimeSignal = registerSignal("totalProcessingTime");
     totalPropagationTimeSignal = registerSignal("totalPropagationTime");
@@ -32,14 +34,14 @@ void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
     Task* task = omnetpp::check_and_cast<Task*>(msg);
 
     // gather statistics
-    emit(lifeTimeSignal, omnetpp::simTime() - task->getCreationTime());
+    emit(creationTimeSignal, task->getCreationTime());
     emit(totalWaitingTimeSignal, task->getTotalWaitingTime());
     emit(totalProcessingTimeSignal, task->getTotalProcessingTime());
     emit(totalPropagationTimeSignal, task->getTotalPropagationTime());
     emit(deadlineSignal, task->getDeadline());
     emit(taskSizeSignal, task->getTaskSize());
-    emit(cpuCyclesSignal, task->getCpuCycles());
-    emit(processedCyclesSignal, task->getProcessedCycles());
+    emit(cpuCyclesSignal, task->getRequiredCycle());
+    emit(processedCyclesSignal, task->getProcessedCycle());
     emit(arrivingServerSignal, task->getArrivingServer());
     emit(runningServerSignal, task->getRunningServer());
     emit(hopCountSignal, task->getHopCount());

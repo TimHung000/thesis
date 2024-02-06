@@ -18,6 +18,7 @@ simple InfoHandler
 {
     parameters:
         @display("i=device/server2");
+        int maxHop;
     gates:
         input processorInfoIn;
         inout otherEdgeServerInfoPorts[];

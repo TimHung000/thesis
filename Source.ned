@@ -16,11 +16,8 @@
 simple Source
 {
     parameters:
-        @signal[created](type="long");
-        @statistic[created](title="the number of jobs created";record=last;interpolationmode=none);
         @display("i=block/source");
-        volatile double interArrivalTime @unit(s) = default(exponential(1s)); // time between generated jobs
-        string taskName = default("task");         // the base name of the generated job (will be the module name if left empty)
+        volatile double interArrivalTime; // time between generated jobs
     gates:
         output out;
 }

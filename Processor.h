@@ -14,9 +14,10 @@ class Processor : public omnetpp::cSimpleModule
         Task *taskRunning = nullptr;      // the task that is processing
         std::vector<double> frequencyList;
         std::vector<double> serverCapacityVector;
+        int serverId;
         double frequency;
         double serverCapacity;
-        double totalRequiredCycles;
+        double totalRequiredCycle;
         double totalMemoryConsumed;
 
 

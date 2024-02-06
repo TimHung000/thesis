@@ -16,7 +16,7 @@ simple FinishedTaskCollector
 {
     parameters:
         @display("i=block/sink");
-        @signal[lifeTime](type="simtime_t");
+        @signal[creationTime](type="simtime_t");
         @signal[totalWaitingTime](type="simtime_t");
         @signal[totalProcessingTime](type="simtime_t");
         @signal[totalPropagationTime](type="simtime_t");
@@ -24,11 +24,11 @@ simple FinishedTaskCollector
         @signal[taskSize](type="double");
         @signal[cpuCycles](type="double");
         @signal[processedCycles](type="double");
-        @signal[arrivingServer](type="string");
-        @signal[runningServer](type="string");
+        @signal[arrivingServer](type="int");
+        @signal[runningServer](type="int");
         @signal[hopCount](type="long");
         @signal[isCompleted](type="bool");
-        @statistic[lifeTime](title="lifetime of arrived jobs";source="lifeTime";record=vector);
+        @statistic[creationTime](title="creation time of arrived jobs";source="creationTime";record=vector);
         @statistic[totalWaitingTime](title="the total time spent in waiting queue";source="totalWaitingTime";record=vector);
         @statistic[totalProcessingTime](title="the total time spent in processing the task";source="totalProcessingTime";record=vector);
         @statistic[totalPropagationTime](title="the total time spent on the link";source="totalPropagationTime";record=vector);

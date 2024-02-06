@@ -14,12 +14,13 @@ Processor::~Processor()
 
 void Processor::initialize()
 {
-    std::vector<double> frequencyList = {1*1e9, 2*1e9, 3*1e9};
-    std::vector<double> serverCapacityVector = {10000000, 20000000, 30000000};
+    serverId = getParentModule()->getIndex();
+    frequencyList = {1*1e9, 2*1e9, 3*1e9};
+    serverCapacityVector = {10 * 1e6, 20 * 1e6, 30 * 1e6};
     int randInt = intrand(frequencyList.size() - 1);
     frequency = frequencyList[randInt];
     serverCapacity = serverCapacityVector[randInt];
-    totalRequiredCycles = 0;
+    totalRequiredCycle = 0;
     totalMemoryConsumed = 0;
     endServiceMsg = new omnetpp::cMessage("end-service");
     statusReportMsg = new omnetpp::cMessage("statusReport");
@@ -35,9 +36,9 @@ void Processor::handleMessage(omnetpp::cMessage *msg)
         omnetpp::simtime_t processingTime = omnetpp::simTime() - endServiceMsg->getSendingTime();
         double processedCycle = processingTime.dbl() * frequency;
         taskRunning->setTotalProcessingTime(taskRunning->getTotalProcessingTime() + processingTime);
-        taskRunning->setProcessedCycles(taskRunning->getProcessedCycles() + processedCycle);
+        taskRunning->setProcessedCycle(taskRunning->getProcessedCycle() + processedCycle);
         taskRunning->setIsCompleted(true);
-        totalRequiredCycles -= processedCycle;
+        totalRequiredCycle -= taskRunning->getRequiredCycle();
         totalMemoryConsumed -= taskRunning->getTaskSize();
         send(taskRunning, "taskFinishedOut");
         taskRunning = nullptr;
@@ -51,19 +52,19 @@ void Processor::handleMessage(omnetpp::cMessage *msg)
     if (msg == statusReportMsg) {
         Info *InfoMsg = createEdgeServerInfoMsg();
         send(InfoMsg, "infoOut");
-        scheduleAfter(10, statusReportMsg);
+        scheduleAfter(1, statusReportMsg);
         return;
     }
 
 
     // new task incoming from user or other server offloading their task
     Task *incomingTask = omnetpp::check_and_cast<Task*>(msg);
-    incomingTask->setRunningServer(getParentModule()->getIndex());
-    totalRequiredCycles += incomingTask->getCpuCycles();
+    incomingTask->setRunningServer(serverId);
+    totalRequiredCycle += incomingTask->getRequiredCycle();
     totalMemoryConsumed += incomingTask->getTaskSize();
     waitingQueue.push_back(incomingTask);
     EV << "new task in update" << omnetpp::endl;
-    EV << "server total RequiredCycle: " << totalRequiredCycles << omnetpp::endl;
+    EV << "server total RequiredCycle: " << totalRequiredCycle << omnetpp::endl;
     EV << "server total memory consumed: " << totalMemoryConsumed << omnetpp::endl;
     scheduling();
 }
@@ -87,18 +88,18 @@ void Processor::scheduling()
 
     taskRunning = waitingQueue.front();
     waitingQueue.pop_front();
-    double cpuCycles = taskRunning->getCpuCycles();
-    double runningTime = cpuCycles / frequency;
+    double requiredCycle = taskRunning->getRequiredCycle();
+    double runningTime = requiredCycle / frequency;
     EV << "scheduling new task" << omnetpp::endl;
-    EV << "task required cpu cycles: " << cpuCycles << omnetpp::endl;
+    EV << "task required cpu cycles: " << requiredCycle << omnetpp::endl;
     EV << "server frequency: " << frequency << omnetpp::endl;
     EV << "task running time: " << runningTime << omnetpp::endl;
-    while (omnetpp::simTime() + runningTime > taskRunning->getCreationTime() + taskRunning->getDeadline() * 1e-3) {
+    while (omnetpp::simTime() + runningTime > taskRunning->getCreationTime() + taskRunning->getDeadline()) {
+        EV << "task need to be drop because it can't complete before deadline: " << taskRunning->getCreationTime() + taskRunning->getDeadline() << omnetpp::endl;
         send(taskRunning, "taskFinishedOut");
-        EV << "task need to be drop because it can't complete before deadline: " << taskRunning->getCreationTime() + taskRunning->getDeadline() * 1e-3 << omnetpp::endl;
-        totalRequiredCycles -= taskRunning->getCpuCycles();
+        totalRequiredCycle -= taskRunning->getRequiredCycle();
         totalMemoryConsumed -= taskRunning->getTaskSize();
-        EV << "server total RequiredCycle: " << totalRequiredCycles << omnetpp::endl;
+        EV << "server total RequiredCycle: " << totalRequiredCycle << omnetpp::endl;
         EV << "server total memory consumed: " << totalMemoryConsumed << omnetpp::endl;
         if (waitingQueue.empty()) {
             taskRunning = nullptr;
@@ -106,9 +107,10 @@ void Processor::scheduling()
         }
         taskRunning = waitingQueue.front();
         waitingQueue.pop_front();
-        runningTime = taskRunning->getCpuCycles() / frequency;
+        requiredCycle = taskRunning->getRequiredCycle();
+        runningTime = requiredCycle / frequency;
         EV << "scheduling new task" << omnetpp::endl;
-        EV << "task required cpu cycles: " << cpuCycles << omnetpp::endl;
+        EV << "task required cpu cycles: " << requiredCycle << omnetpp::endl;
         EV << "server frequency: " << frequency << omnetpp::endl;
         EV << "task running time: " << runningTime << omnetpp::endl;
     }
@@ -124,7 +126,9 @@ Info *Processor::createEdgeServerInfoMsg()
     serverInfo->setServerFrequency(frequency);
     serverInfo->setServerCapacity(serverCapacity);
     serverInfo->setTaskCount(taskRunning ? waitingQueue.size() + 1 : waitingQueue.size());
-    serverInfo->setTotalRequiredCycle(totalRequiredCycles);
+    serverInfo->setTotalRequiredCycle(totalRequiredCycle);
     serverInfo->setTotalMemoryConsumed(totalMemoryConsumed);
+    serverInfo->setHopCount(0);
+    serverInfo->setCreationTime(omnetpp::simTime());
     return serverInfo;
 }
