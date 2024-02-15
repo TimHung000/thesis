@@ -59,6 +59,7 @@ void InfoHandler::handleMessage(omnetpp::cMessage *msg)
             cancelAndDelete(originInfo);
         EV << "update server " << incomingInfo->getServerIdx() << " status" << omnetpp::endl;
         edgeServerStatus[incomingInfo->getServerIdx()] = incomingInfo;
+
         showStoreStatus();
 
         // broadcast to neighbor
@@ -75,7 +76,6 @@ void InfoHandler::handleMessage(omnetpp::cMessage *msg)
             send(dupInfo, curGate);
         }
         EV << "finished broadcast to neighbor" << omnetpp::endl;
-
     }
 }
 

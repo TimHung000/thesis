@@ -14,6 +14,7 @@ class Dispatcher : public omnetpp::cSimpleModule
         int maximumHop;
         double memoryThreshold;
         int serverId;
+        std::string algorithm;
     protected:
         virtual void initialize() override;
         virtual void handleMessage(omnetpp::cMessage *msg) override;

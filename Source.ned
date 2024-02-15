@@ -18,6 +18,12 @@ simple Source
     parameters:
         @display("i=block/source");
         volatile double interArrivalTime; // time between generated jobs
+        double minTaskSize; // MB
+        double maxTaskSize; // MB
+        double minDeadline; // ms
+        double maxDeadline; // ms
+        double minSubTaskCount;
+        double maxSubTaskCount;
     gates:
         output out;
 }

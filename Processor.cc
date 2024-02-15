@@ -24,8 +24,12 @@ void Processor::initialize()
     totalMemoryConsumed = 0;
     endServiceMsg = new omnetpp::cMessage("end-service");
     statusReportMsg = new omnetpp::cMessage("statusReport");
-    scheduleAt(0, statusReportMsg);
     taskRunning = nullptr;
+    if (getParentModule()->getSubmodule("infoHandler")->par("maxHop").intValue() > 0) {
+        scheduleAt(0, statusReportMsg);
+        EV << "processor need to shared status to info handler" << omnetpp::endl;
+    }
+    statusUpadteInterval = par("statusUpadteInterval").doubleValue() * 1e-3;
 }
 
 void Processor::handleMessage(omnetpp::cMessage *msg)
@@ -52,7 +56,7 @@ void Processor::handleMessage(omnetpp::cMessage *msg)
     if (msg == statusReportMsg) {
         Info *InfoMsg = createEdgeServerInfoMsg();
         send(InfoMsg, "infoOut");
-        scheduleAfter(1, statusReportMsg);
+        scheduleAfter(statusUpadteInterval, statusReportMsg);
         return;
     }
 

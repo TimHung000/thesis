@@ -18,6 +18,7 @@ simple Dispatcher
     parameters:
         double memoryThreshold = 0.8;
         int maximumHop = 10;
+        string algorithm;
         @display("i=abstract/dispatcher");
         
     gates:

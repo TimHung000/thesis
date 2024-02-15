@@ -19,6 +19,7 @@ class Processor : public omnetpp::cSimpleModule
         double serverCapacity;
         double totalRequiredCycle;
         double totalMemoryConsumed;
+        double statusUpadteInterval;
 
 
         omnetpp::cMessage *endServiceMsg = nullptr;

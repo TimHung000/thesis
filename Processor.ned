@@ -6,6 +6,7 @@ simple Processor
         @signal[cpuFrequency](type="double");
         @statistic[busy](title="server busy state";record=vector);
         @statistic[cpuFrequency](title="cpu frequency";record=vector);
+        double statusUpadteInterval;  // ms
     gates:
         input in;
         output infoOut;        

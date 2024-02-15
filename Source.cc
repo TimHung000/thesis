@@ -12,12 +12,12 @@ void Source::initialize()
     serverId = getParentModule()->getIndex();
     userId = getIndex();
     taskCounter = 0;
-    minTaskSize = 1;    // MB
-    maxTaskSize = 3;    // MB
-    minDeadline = 50;   // ms
-    maxDeadline = 100;  // ms
-    minSubTaskCount = 1;
-    maxSubTaskCount = 5;
+    minTaskSize = par("minTaskSize").doubleValue();       // MB
+    maxTaskSize = par("maxTaskSize").doubleValue();       // MB
+    minDeadline = par("minDeadline").doubleValue();       // ms
+    maxDeadline = par("maxDeadline").doubleValue();       // ms
+    minSubTaskCount = static_cast<int>(par("minSubTaskCount").doubleValue());
+    maxSubTaskCount = static_cast<int>(par("maxSubTaskCount").doubleValue());
 
     // schedule the first message timer for start time
     scheduleAt(omnetpp::simTime() + par("interArrivalTime").doubleValue(), new omnetpp::cMessage("newTaskTimer"));
