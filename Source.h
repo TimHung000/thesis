@@ -23,8 +23,9 @@ class Source : public omnetpp::cSimpleModule
         std::vector<double> taskSizeVector;
         std::vector<double> taskDeadlineVector;
         std::vector<double> taskCpuCyclesVector;
-        double minTaskSize;     // MB
-        double maxTaskSize;     // MB
+        double minRequiredCPUCycle;     // M
+        double maxRequiredCPUCycle;     // M
+        double taskSizeMultiple;
         double minDeadline;     // ms
         double maxDeadline;     // ms
         int minSubTaskCount;

@@ -16,6 +16,7 @@
 #include "Task_m.h"
 #include "Info_m.h"
 #include "SubTask.h"
+#include <queue>
 
 Define_Module(Dispatcher);
 
@@ -34,13 +35,25 @@ void Dispatcher::initialize()
     serverId = getParentModule()->getIndex();
     memoryThreshold = par("memoryThreshold");
     maximumHop = par("maximumHop");
-    algorithm = par("algorithm").stdstringValue();
-    EV << "server " << serverId << "use " << algorithm << "algorithm" << omnetpp::endl;
+    dispatchingAlgo = par("dispatchingAlgo").stdstringValue();
+
+    totalTaskDrop = 0;
+    totalTaskDropSignal = registerSignal("totalTaskDrop");
+    reportMsg = new omnetpp::cMessage("reportMsg");
+    scheduleAt(0, reportMsg);
 }
 
 void Dispatcher::handleMessage(omnetpp::cMessage *msg)
 {
-    if (algorithm == "Random") {
+    if (msg == reportMsg) {
+
+        emit(totalTaskDropSignal, totalTaskDrop);
+        totalTaskDrop = 0;
+        scheduleAfter(1, reportMsg);
+        return;
+    }
+
+    if (dispatchingAlgo == "Random") {
         /***********************************************
          * Random Walk based Load Balancing Algorithm  *
          ***********************************************/
@@ -53,6 +66,8 @@ void Dispatcher::handleMessage(omnetpp::cMessage *msg)
             incomingTask->setRunningServer(serverId);
             intVector& hopPathForUpdate = incomingTask->getHopPathForUpdate();
             hopPathForUpdate.push_back(serverId);
+            incomingTask->setFromDispatcher(true);
+            totalTaskDrop += 1;
             send(incomingTask, "taskFinishedOut");
             return;
         }
@@ -61,8 +76,13 @@ void Dispatcher::handleMessage(omnetpp::cMessage *msg)
         // otherwise, randomly offload to neighbor server
         Processor *processorModule = omnetpp::check_and_cast<Processor*>(getParentModule()->getSubmodule("processor"));
         Info *thisServerInfo = processorModule->createEdgeServerInfoMsg();
-        if (thisServerInfo->getTotalMemoryConsumed() + incomingTask->getTaskSize()
-                    <= thisServerInfo->getServerCapacity()) {
+        EV << "test" << omnetpp::endl;
+        EV << "added size: " << thisServerInfo->getTotalMemoryConsumed() + incomingTask->getTaskSize() << omnetpp::endl;
+        EV << "capacity: " << thisServerInfo->getServerCapacity() << omnetpp::endl;
+        EV << "true or false: " << (thisServerInfo->getTotalMemoryConsumed() + incomingTask->getTaskSize() <= thisServerInfo->getServerCapacity()) << omnetpp::endl;
+        if (thisServerInfo->getServerCapacity() - thisServerInfo->getTotalMemoryConsumed() >= incomingTask->getTaskSize() &&
+                omnetpp::simTime() + (thisServerInfo->getTotalRequiredCycle() + incomingTask->getRequiredCycle()) / thisServerInfo->getServerFrequency()
+                       <= incomingTask->getCreationTime() + incomingTask->getDeadline()) {
             incomingTask->setRunningServer(serverId);
             intVector& hopPathForUpdate = incomingTask->getHopPathForUpdate();
             hopPathForUpdate.push_back(serverId);
@@ -75,7 +95,7 @@ void Dispatcher::handleMessage(omnetpp::cMessage *msg)
 
         cancelAndDelete(thisServerInfo);
         return;
-    } else if (algorithm == "Greedy") {
+    } else if (dispatchingAlgo == "Greedy") {
         /***********************************************
          * Distributed Dynamic Offloading Mechanism    *
          ***********************************************/
@@ -87,6 +107,8 @@ void Dispatcher::handleMessage(omnetpp::cMessage *msg)
             incomingTask->setRunningServer(serverId);
             intVector& hopPathForUpdate = incomingTask->getHopPathForUpdate();
             hopPathForUpdate.push_back(serverId);
+            totalTaskDrop += 1;
+            incomingTask->setFromDispatcher(true);
             send(incomingTask, "taskFinishedOut");
             return;
         }
@@ -96,24 +118,35 @@ void Dispatcher::handleMessage(omnetpp::cMessage *msg)
         Info *thisServerInfo = processorModule->createEdgeServerInfoMsg();
 
         // if the current server can accommodate the task, then send to the processor
-        if (thisServerInfo->getTotalMemoryConsumed() + incomingTask->getTaskSize()
-                    <= thisServerInfo->getServerCapacity()) {
+        if (thisServerInfo->getServerCapacity() - thisServerInfo->getTotalMemoryConsumed() >= incomingTask->getTaskSize() &&
+                omnetpp::simTime() + (thisServerInfo->getTotalRequiredCycle() + incomingTask->getRequiredCycle()) / thisServerInfo->getServerFrequency()
+                <= incomingTask->getCreationTime() + incomingTask->getDeadline()) {
+
             incomingTask->setRunningServer(serverId);
             intVector& hopPathForUpdate = incomingTask->getHopPathForUpdate();
             hopPathForUpdate.push_back(serverId);
             send(incomingTask, "localProcessOut");
-
         } else {
             // find best neighbor to offload the task
             // first sort the neighbor server based on running time of all tasks
             // then choose the first one that can accommodate the task
-            InfoHandler *infoHandlerModule = omnetpp::check_and_cast<InfoHandler*>(getParentModule()->getSubmodule("infoHandler"));
-            std::unordered_map<int, Info*> otherServerInfoMap = infoHandlerModule->getEdgeServerStatus();
-            std::vector<Info*> infoVec;
 
-            for (const auto& entry: otherServerInfoMap) {
-                infoVec.push_back(entry.second);
-                EV << "neighbor has server id " << entry.first << omnetpp::endl;
+//            InfoHandler *infoHandlerModule = omnetpp::check_and_cast<InfoHandler*>(getParentModule()->getSubmodule("infoHandler"));
+//            std::unordered_map<int, Info*> otherServerInfoMap = infoHandlerModule->getEdgeServerStatus();
+//            for (const auto& entry: otherServerInfoMap) {
+//                infoVec.push_back(entry.second);
+//                EV << "neighbor has server id " << entry.first << omnetpp::endl;
+//            }
+
+
+            std::vector<Info*> infoVec;
+            int outputGateSize = getParentModule()->gateSize("ports$o");
+            Processor *neighborProcessorModule;
+            Info *neighborServerInfo;
+            for (int i = 0; i < outputGateSize; ++i){
+                neighborProcessorModule  = omnetpp::check_and_cast<Processor*>(getParentModule()->gate("ports$o", i)->getNextGate()->getOwnerModule()->getSubmodule("processor"));
+                neighborServerInfo = neighborProcessorModule->createEdgeServerInfoMsg();
+                infoVec.push_back(neighborServerInfo);
             }
 
             std::sort(infoVec.begin(), infoVec.end(), [](const Info* lhs, const Info* rhs) {
@@ -125,14 +158,15 @@ void Dispatcher::handleMessage(omnetpp::cMessage *msg)
             // if all neighbor server is out of memory space, then choose the one with less running time of all tasks
             incomingTask->setDestinationServer(infoVec[0]->getServerIdx());
             send(incomingTask, "offloadOut");
-//            int randInt = intrand(neighborSevers.size());
-//            incomingTask->setDestinationServer(neighborSevers[randInt]);
-//            send(incomingTask, "offloadOut");
+            for (auto& info: infoVec)
+                cancelAndDelete(info);
+
+
         }
 
         cancelAndDelete(thisServerInfo);
 
-    } else if (algorithm == "Proposed") {
+    } else if (dispatchingAlgo == "Proposed") {
         /***********************************************
          *           Proposed Method                   *
          ***********************************************/
@@ -144,135 +178,142 @@ void Dispatcher::handleMessage(omnetpp::cMessage *msg)
             incomingTask->setRunningServer(serverId);
             intVector& hopPathForUpdate = incomingTask->getHopPathForUpdate();
             hopPathForUpdate.push_back(serverId);
+            totalTaskDrop += 1;
+            incomingTask->setFromDispatcher(true);
             send(incomingTask, "taskFinishedOut");
             return;
         }
 
-
-        // collect all the server info within maxHop include this server
-
+        // this server status
         Processor *processorModule = omnetpp::check_and_cast<Processor*>(getParentModule()->getSubmodule("processor"));
         Info *thisServerInfo = processorModule->createEdgeServerInfoMsg();
-        InfoHandler *infoHandlerModule = omnetpp::check_and_cast<InfoHandler*>(getParentModule()->getSubmodule("infoHandler"));
-        std::unordered_map<int, Info*> otherServerInfoMap = infoHandlerModule->getEdgeServerStatus();
 
-        std::vector<Info*> infoVec;
-        infoVec.push_back(thisServerInfo);
-        for (const auto& entry: otherServerInfoMap)
-            infoVec.push_back(entry.second);
 
-        // sort all the server info based on its running time of all tasks. short to long
-        std::sort(infoVec.begin(), infoVec.end(), [](const Info* lhs, const Info* rhs) {
-            double lhsPredictedDelay = lhs->getTotalRequiredCycle() / lhs->getServerFrequency()
-                    + static_cast<double>(lhs->getHopCount()) * 5 * 1e-3;
-            double rhsPredictedDelay = rhs->getTotalRequiredCycle() / rhs->getServerFrequency()
-                    + static_cast<double>(rhs->getHopCount()) * 5 * 1e-3;
+        if (thisServerInfo->getServerCapacity() - thisServerInfo->getTotalMemoryConsumed() >= incomingTask->getTaskSize() &&
+                omnetpp::simTime() + (thisServerInfo->getTotalRequiredCycle() + incomingTask->getRequiredCycle()) / thisServerInfo->getServerFrequency()
+                <= incomingTask->getCreationTime() + incomingTask->getDeadline()) {
+            incomingTask->setRunningServer(serverId);
+            intVector& hopPathForUpdate = incomingTask->getHopPathForUpdate();
+            hopPathForUpdate.push_back(serverId);
+            send(incomingTask, "localProcessOut");
+        } else { // whole task cannot be accommodate by server, so split it
 
-            return lhsPredictedDelay < rhsPredictedDelay;
-        });
 
-        // get the sub task list of this main task
-        subTaskVector& subTaskVec = incomingTask->getSubTaskVecForUpdate();
-        EV << "task size is : " << incomingTask->getTaskSize() << omnetpp::endl;
-        for (int i = 0; i < subTaskVec.size(); ++i) {
-            EV << "subtask " << i << " size is : " << subTaskVec[i]->getSubTaskSize() << omnetpp::endl;
-        }
 
-        // if this task is already split or cannot split, then find the best server and offload it
-        if (subTaskVec.size() == 1) {
-            EV << "subtask count is 1"  << omnetpp::endl;
-            int bestIdx = 0;
-            for (int i = 0; i < infoVec.size(); ++i) {
-                if (infoVec[i]->getTotalMemoryConsumed() + incomingTask->getTaskSize()
-                        <= infoVec[i]->getServerCapacity()) {
-                    bestIdx = i;
-                    break;
-                }
+
+//            InfoHandler *infoHandlerModule = omnetpp::check_and_cast<InfoHandler*>(getParentModule()->getSubmodule("infoHandler"));
+//            std::unordered_map<int, Info*> otherServerInfoMap = infoHandlerModule->getEdgeServerStatus();
+//            for (const auto& entry: otherServerInfoMap) {
+//                infoHeap.push(entry.second);
+//            }
+
+
+            subTaskVector& subTaskVec = incomingTask->getSubTaskVecForUpdate();
+            // task has multiple subtasks, so sort it by its required cpu cycle. large..small
+            std::sort(subTaskVec.begin(), subTaskVec.end(), [](const SubTask *lhs, const SubTask *rhs) {
+                return lhs->getSubTaskSize() >= rhs->getSubTaskSize();
+            });
+
+            auto compare = [](Info* lhs, Info* rhs) {
+                double lhsRemainedSpace = lhs->getServerCapacity() - lhs->getTotalMemoryConsumed();
+                double rhsRemainedSpace = rhs->getServerCapacity() - rhs->getTotalMemoryConsumed();
+                return lhsRemainedSpace < rhsRemainedSpace;
+            };
+
+            std::priority_queue<Info*, std::vector<Info*>, decltype(compare)> infoHeap(compare);
+
+            int outputGateSize = getParentModule()->gateSize("ports$o");
+            Processor *neighborProcessorModule;
+            Info *neighborServerInfo;
+            for (int i = 0; i < outputGateSize; ++i){
+                neighborProcessorModule  = omnetpp::check_and_cast<Processor*>(getParentModule()->gate("ports$o", i)->getNextGate()->getOwnerModule()->getSubmodule("processor"));
+                neighborServerInfo = neighborProcessorModule->createEdgeServerInfoMsg();
+                infoHeap.push(neighborServerInfo);
             }
 
-            int destinationServerId = infoVec[bestIdx]->getServerIdx();
-            incomingTask->setDestinationServer(destinationServerId);
-            if (destinationServerId == serverId)
-                send(incomingTask, "localProcessOut");
-            else
+
+
+            if (subTaskVec.size() == 1) {
+                incomingTask->setDestinationServer(infoHeap.top()->getServerIdx());
                 send(incomingTask, "offloadOut");
+            } else {
+                int curSubTaskId = 0;
+                double totalSubTaskSize = 0;
+                double totalSubTaskRequiredCPUCycle = 0;
+                double thisServerPredictedSpace = thisServerInfo->getServerCapacity() - thisServerInfo->getTotalMemoryConsumed();
+                omnetpp::simtime_t thisServerPredictedFinishedTime = omnetpp::simTime() + thisServerInfo->getTotalRequiredCycle() / thisServerInfo->getServerFrequency();
 
-            cancelAndDelete(thisServerInfo);
-            return;
-        }
+                while (curSubTaskId < subTaskVec.size() &&
+                        thisServerPredictedSpace >= subTaskVec[curSubTaskId]->getSubTaskSize() &&
+                        thisServerPredictedFinishedTime + subTaskVec[curSubTaskId]->getSubTaskRequiredCPUCycle() / thisServerInfo->getServerFrequency()
+                        <= incomingTask->getCreationTime() + incomingTask->getDeadline()) {
 
+                    Task *dupTask = incomingTask->dup();
 
-        // task has multiple subtasks, so sort it by its required cpu cycle. large..small
-        std::sort(subTaskVec.begin(), subTaskVec.end(), [](const SubTask *lhs, const SubTask *rhs) {
-            return lhs->getSubTaskRequiredCPUCycle() >= rhs->getSubTaskRequiredCPUCycle();
-        });
+                    totalSubTaskSize += subTaskVec[curSubTaskId]->getSubTaskSize();
+                    dupTask->setTaskSize(subTaskVec[curSubTaskId]->getSubTaskSize());
 
+                    totalSubTaskRequiredCPUCycle += subTaskVec[curSubTaskId]->getSubTaskRequiredCPUCycle();
+                    dupTask->setRequiredCycle(subTaskVec[curSubTaskId]->getSubTaskRequiredCPUCycle());
 
-        // assign the sub task to the currently best server sequentially
-        // the best server is the first entry of info vector
-        // as we assign the task to it, it's running time will increase.
-        // when it's running time bigger than the second best, it will go to the next
-        int curSubTaskIdx = 0;
-        Info* curServerInfo;
-        Info* nextServerInfo;
-        double curServerPredictedDelay;
-        double nextServerPredictedDelay;
-        int destinationServerId;
-        for (int i = 0; i < infoVec.size() - 1; ++i) {
-            curServerInfo = infoVec[i];
-            nextServerInfo = infoVec[i+1];
-            curServerPredictedDelay = curServerInfo->getTotalRequiredCycle() / curServerInfo->getServerFrequency()
-                    + static_cast<double>(curServerInfo->getHopCount()) * 5 * 1e-3;
-            nextServerPredictedDelay = nextServerInfo->getTotalRequiredCycle() / nextServerInfo->getServerFrequency()
-                    + static_cast<double>(nextServerInfo->getHopCount()) * 5 * 1e-3;
-            while(curSubTaskIdx < subTaskVec.size() && curServerPredictedDelay < nextServerPredictedDelay) {
-                // decide to send task to cur server
-                // create a new task that represent the subTask
-                // the taskId of subTask will be the same as main Task
-                Task *dupTask = incomingTask->dup();
-                dupTask->setTaskSize(subTaskVec[curSubTaskIdx]->getSubTaskSize());
-                dupTask->setRequiredCycle(subTaskVec[curSubTaskIdx]->getSubTaskRequiredCPUCycle());
-                std::vector<int> hopPath(incomingTask->getHopPath());
-                dupTask->setHopPath(hopPath);
-                dupTask->setSubTaskVec({subTaskVec[curSubTaskIdx]});
-                destinationServerId = curServerInfo->getServerIdx();
-                dupTask->setDestinationServer(destinationServerId);
-                EV << dupTask->getName() << " - " << curSubTaskIdx << " is offload to " <<  destinationServerId << omnetpp::endl;
-                if (destinationServerId == serverId) {
+                    std::vector<int> hopPath(incomingTask->getHopPath());
+                    hopPath.push_back(serverId);
+                    dupTask->setHopPath(hopPath);
+                    dupTask->setSubTaskVec({subTaskVec[curSubTaskId]});
+                    dupTask->setDestinationServer(serverId);
                     dupTask->setRunningServer(serverId);
-                    intVector& hopPathForUpdate = dupTask->getHopPathForUpdate();
-                    hopPathForUpdate.push_back(serverId);
                     send(dupTask, "localProcessOut");
-                } else {
-                    send(dupTask, "offloadOut");
+
+                    thisServerPredictedSpace -= subTaskVec[curSubTaskId]->getSubTaskSize();
+                    curSubTaskId += 1;
                 }
-                // update the current best server until it is not the best then go to second
-                curServerPredictedDelay += subTaskVec[curSubTaskIdx]->getSubTaskRequiredCPUCycle() / curServerInfo->getServerFrequency();
-                // decide the next subTask
-                curSubTaskIdx += 1;
+
+                Info *targetServerInfo;
+                while (curSubTaskId < subTaskVec.size()) {
+                    targetServerInfo = infoHeap.top();
+                    infoHeap.pop();
+
+                    Task *dupTask = incomingTask->dup();
+
+                    totalSubTaskSize += subTaskVec[curSubTaskId]->getSubTaskSize();
+                    dupTask->setTaskSize(subTaskVec[curSubTaskId]->getSubTaskSize());
+
+                    totalSubTaskRequiredCPUCycle += subTaskVec[curSubTaskId]->getSubTaskRequiredCPUCycle();
+                    dupTask->setRequiredCycle(subTaskVec[curSubTaskId]->getSubTaskRequiredCPUCycle());
+
+                    std::vector<int> hopPath(incomingTask->getHopPath());
+                    dupTask->setHopPath(hopPath);
+                    dupTask->setSubTaskVec({subTaskVec[curSubTaskId]});
+                    dupTask->setDestinationServer(targetServerInfo->getServerIdx());
+                    send(dupTask, "offloadOut");
+
+                    targetServerInfo->setTotalMemoryConsumed(targetServerInfo->getTotalMemoryConsumed() + subTaskVec[curSubTaskId]->getSubTaskSize());
+                    infoHeap.push(targetServerInfo);
+
+                    curSubTaskId += 1;
+                }
+
+                ASSERT(totalSubTaskSize == incomingTask->getTaskSize());
+                ASSERT(totalSubTaskRequiredCPUCycle == incomingTask->getRequiredCycle());
+
+                cancelAndDelete(incomingTask);    // incoming task is divided into multiple subtask
+
+            }
+            Info *info;
+            while (!infoHeap.empty()) {
+                info = infoHeap.top();
+                infoHeap.pop();
+                cancelAndDelete(info);
             }
 
-            // already offload all the subtask
-            if (curSubTaskIdx >= subTaskVec.size())
-                break;
         }
-
-        cancelAndDelete(incomingTask);    // incoming task is divided into multiple subtask
         cancelAndDelete(thisServerInfo);
-        return;
-    } else {
-        ASSERT(false);
-        return;
     }
 }
 
 void Dispatcher::refreshDisplay() const
 {
-    // Convert taskName to std::string
-    std::string statusTag = "execute";
 
-    // Set the tag argument in the display string
-    getDisplayString().setTagArg("processor", 0, statusTag.c_str());
 }
 
 void Dispatcher::finish()

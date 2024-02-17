@@ -15,11 +15,16 @@ Processor::~Processor()
 void Processor::initialize()
 {
     serverId = getParentModule()->getIndex();
-    frequencyList = {1*1e9, 2*1e9, 3*1e9};
-    serverCapacityVector = {10 * 1e6, 20 * 1e6, 30 * 1e6};
-    int randInt = intrand(frequencyList.size() - 1);
-    frequency = frequencyList[randInt];
-    serverCapacity = serverCapacityVector[randInt];
+    maxFrequency = par("maxFrequency").doubleValue();
+    minFrequency = par("minFrequency").doubleValue();
+    memoryMultiple = par("memoryMultiple").doubleValue();
+    schedulingAlgo = par("schedulingAlgo").stdstringValue();
+    EV << "schedulingAlog:" << schedulingAlgo << omnetpp::endl;
+    double randFrequency = minFrequency + intrand(maxFrequency - minFrequency + 1);
+    frequency = static_cast<double>(randFrequency) * 1e9;
+
+    serverCapacity = frequency * memoryMultiple;
+
     totalRequiredCycle = 0;
     totalMemoryConsumed = 0;
     endServiceMsg = new omnetpp::cMessage("end-service");
@@ -30,6 +35,16 @@ void Processor::initialize()
         EV << "processor need to shared status to info handler" << omnetpp::endl;
     }
     statusUpadteInterval = par("statusUpadteInterval").doubleValue() * 1e-3;
+
+
+    totalTaskFinished = 0;
+    totalTaskCompleted = 0;
+    memoryLoadingSignal = registerSignal("memoryLoading");
+    CPULoadingSignal = registerSignal("CPULoading");
+    totalTaskFinishedSignal = registerSignal("totalTaskFinished");
+    totalTaskCompletedSignal = registerSignal("totalTaskCompleted");
+    reportMsg = new omnetpp::cMessage("reportMsg");
+    scheduleAt(0, reportMsg);
 }
 
 void Processor::handleMessage(omnetpp::cMessage *msg)
@@ -42,8 +57,12 @@ void Processor::handleMessage(omnetpp::cMessage *msg)
         taskRunning->setTotalProcessingTime(taskRunning->getTotalProcessingTime() + processingTime);
         taskRunning->setProcessedCycle(taskRunning->getProcessedCycle() + processedCycle);
         taskRunning->setIsCompleted(true);
+        EV << "finished processed one task and release memory, before memory release: " << totalMemoryConsumed << omnetpp::endl;
         totalRequiredCycle -= taskRunning->getRequiredCycle();
         totalMemoryConsumed -= taskRunning->getTaskSize();
+        EV << "finished processed one task and release memory, after memory release: " << totalMemoryConsumed << omnetpp::endl;
+        totalTaskFinished += 1;
+        totalTaskCompleted += 1;
         send(taskRunning, "taskFinishedOut");
         taskRunning = nullptr;
 
@@ -60,26 +79,62 @@ void Processor::handleMessage(omnetpp::cMessage *msg)
         return;
     }
 
+    if (msg == reportMsg) {
+
+        emit(memoryLoadingSignal, totalMemoryConsumed / serverCapacity);
+        emit(CPULoadingSignal, totalRequiredCycle / frequency);
+        emit(totalTaskFinishedSignal, totalTaskFinished);
+        emit(totalTaskCompletedSignal, totalTaskCompleted);
+        totalTaskFinished = 0;
+        totalTaskCompleted = 0;
+        scheduleAfter(1, reportMsg);
+        return;
+    }
+
 
     // new task incoming from user or other server offloading their task
     Task *incomingTask = omnetpp::check_and_cast<Task*>(msg);
     incomingTask->setRunningServer(serverId);
     totalRequiredCycle += incomingTask->getRequiredCycle();
     totalMemoryConsumed += incomingTask->getTaskSize();
-    waitingQueue.push_back(incomingTask);
-    EV << "new task in update" << omnetpp::endl;
-    EV << "server total RequiredCycle: " << totalRequiredCycle << omnetpp::endl;
-    EV << "server total memory consumed: " << totalMemoryConsumed << omnetpp::endl;
+
+    if (schedulingAlgo == "FIFO") {
+        FIFOwaitingQueue.push_back(incomingTask);
+
+    } else if (schedulingAlgo == "Proposed") {
+
+        bool isSubTask = incomingTask->getSubTaskVec().size() != incomingTask->getTotalSubTaskCount();
+        if (!isSubTask) {
+            omnetpp::simtime_t incomingTaskDeadline = incomingTask->getCreationTime() + incomingTask->getDeadline();
+            omnetpp::simtime_t curTaskDeadline;
+            std::list<Task*>::iterator it = wholeTaskWaitingQueue.begin();
+            while (it != wholeTaskWaitingQueue.end()) {
+                curTaskDeadline = (*it)->getCreationTime() + (*it)->getDeadline();
+                if (curTaskDeadline > incomingTaskDeadline)
+                    break;
+                ++it;
+            }
+            wholeTaskWaitingQueue.insert(it, incomingTask);
+        } else {
+            std::list<Task*>::iterator it = subTaskWaitingQueue.begin();
+            omnetpp::simtime_t incomingTaskDeadline = incomingTask->getCreationTime() + incomingTask->getDeadline();
+            omnetpp::simtime_t curTaskDeadline;
+            while (it != subTaskWaitingQueue.end()) {
+                curTaskDeadline = (*it)->getCreationTime() + (*it)->getDeadline();
+                if (curTaskDeadline > incomingTaskDeadline)
+                    break;
+                ++it;
+            }
+            subTaskWaitingQueue.insert(it, incomingTask);
+        }
+    }
+
     scheduling();
 }
 
 void Processor::refreshDisplay() const
 {
-    // Convert taskName to std::string
-    std::string statusTag = "execute" + (taskRunning ? std::string(" ") + taskRunning->getName() : "");
-
-    // Set the tag argument in the display string
-    getDisplayString().setTagArg("processor", 0, statusTag.c_str());}
+}
 
 void Processor::finish()
 {
@@ -87,39 +142,111 @@ void Processor::finish()
 
 void Processor::scheduling()
 {
-    if (taskRunning || waitingQueue.empty())
-        return;
-
-    taskRunning = waitingQueue.front();
-    waitingQueue.pop_front();
-    double requiredCycle = taskRunning->getRequiredCycle();
-    double runningTime = requiredCycle / frequency;
-    EV << "scheduling new task" << omnetpp::endl;
-    EV << "task required cpu cycles: " << requiredCycle << omnetpp::endl;
-    EV << "server frequency: " << frequency << omnetpp::endl;
-    EV << "task running time: " << runningTime << omnetpp::endl;
-    while (omnetpp::simTime() + runningTime > taskRunning->getCreationTime() + taskRunning->getDeadline()) {
-        EV << "task need to be drop because it can't complete before deadline: " << taskRunning->getCreationTime() + taskRunning->getDeadline() << omnetpp::endl;
-        send(taskRunning, "taskFinishedOut");
-        totalRequiredCycle -= taskRunning->getRequiredCycle();
-        totalMemoryConsumed -= taskRunning->getTaskSize();
-        EV << "server total RequiredCycle: " << totalRequiredCycle << omnetpp::endl;
-        EV << "server total memory consumed: " << totalMemoryConsumed << omnetpp::endl;
-        if (waitingQueue.empty()) {
-            taskRunning = nullptr;
-            return;
+    if (schedulingAlgo == "FIFO") {
+        std::list<Task*>::iterator it = FIFOwaitingQueue.begin();
+        while (it != FIFOwaitingQueue.end()) {
+            if (omnetpp::simTime() > (*it)->getCreationTime() + (*it)->getDeadline()) {
+                totalTaskFinished += 1;
+                send((*it), "taskFinishedOut");
+                it = FIFOwaitingQueue.erase(it);
+            } else
+                ++it;
         }
-        taskRunning = waitingQueue.front();
-        waitingQueue.pop_front();
-        requiredCycle = taskRunning->getRequiredCycle();
-        runningTime = requiredCycle / frequency;
-        EV << "scheduling new task" << omnetpp::endl;
-        EV << "task required cpu cycles: " << requiredCycle << omnetpp::endl;
-        EV << "server frequency: " << frequency << omnetpp::endl;
-        EV << "task running time: " << runningTime << omnetpp::endl;
+
+        // still has task running
+        if (taskRunning)
+            return;
+
+        // get the first task that can finished before deadline
+        it = FIFOwaitingQueue.begin();
+        while (it != FIFOwaitingQueue.end() &&
+                omnetpp::simTime() + (*it)->getRequiredCycle() / frequency > (*it)->getCreationTime() + (*it)->getDeadline()) {
+
+            totalTaskFinished += 1;
+            totalRequiredCycle -= (*it)->getRequiredCycle();
+            totalMemoryConsumed -= (*it)->getTaskSize();
+            send((*it), "taskFinishedOut");
+
+            ++it;
+            FIFOwaitingQueue.pop_front();
+        }
+
+        // assing the first task than can finished before deadline to the taskRunning
+        if (it != FIFOwaitingQueue.end()) {
+            FIFOwaitingQueue.pop_front();
+            taskRunning = *it;
+            double runningTime = taskRunning->getRequiredCycle() / frequency;
+            scheduleAt(omnetpp::simTime()+runningTime, endServiceMsg);
+        }
+
+    } else if (schedulingAlgo == "Proposed") {
+        if (taskRunning)
+            return;
+
+        // remove all task that will exceed the deadline
+        std::list<Task*>::iterator it = wholeTaskWaitingQueue.begin();
+        while (it != wholeTaskWaitingQueue.end() &&
+                omnetpp::simTime() + (*it)->getRequiredCycle() / frequency > (*it)->getCreationTime() + (*it)->getDeadline()) {
+
+            totalTaskFinished += 1;
+            totalRequiredCycle -= (*it)->getRequiredCycle();
+            totalMemoryConsumed -= (*it)->getTaskSize();
+            send((*it), "taskFinishedOut");
+            ++it;
+            wholeTaskWaitingQueue.pop_front();
+        }
+
+        it = subTaskWaitingQueue.begin();
+        while (it != subTaskWaitingQueue.end() &&
+                omnetpp::simTime() + (*it)->getRequiredCycle() / frequency > (*it)->getCreationTime() + (*it)->getDeadline()) {
+
+            totalTaskFinished += 1;
+            totalRequiredCycle -= (*it)->getRequiredCycle();
+            totalMemoryConsumed -= (*it)->getTaskSize();
+            send((*it), "taskFinishedOut");
+            ++it;
+            subTaskWaitingQueue.pop_front();
+        }
+
+//        std::list<Task*>::iterator wholeTaskIt = wholeTaskWaitingQueue.begin();
+//        std::list<Task*>::iterator subTaskIt = subTaskWaitingQueue.begin();
+//        if (wholeTaskIt != wholeTaskWaitingQueue.end() && subTaskIt != subTaskWaitingQueue.end()) {
+//            // if subtask can meet the deadline after running the wholeTask first then run the whole task
+//            if (omnetpp::simTime() + ((*wholeTaskIt)->getRequiredCycle() + (*subTaskIt)->getRequiredCycle()) / frequency <=
+//                (*subTaskIt)->getCreationTime() + (*subTaskIt)->getDeadline()) {
+//                taskRunning = *wholeTaskIt;
+//                wholeTaskWaitingQueue.pop_front();
+//
+//            } else {
+//                taskRunning = *subTaskIt;
+//                subTaskWaitingQueue.pop_front();
+//            }
+//        } else if (wholeTaskIt != wholeTaskWaitingQueue.end() && subTaskIt == subTaskWaitingQueue.end()) {
+//            taskRunning = *wholeTaskIt;
+//            wholeTaskWaitingQueue.pop_front();
+//        } else if (subTaskIt != subTaskWaitingQueue.end() && wholeTaskIt == wholeTaskWaitingQueue.end()) {
+//            taskRunning = *subTaskIt;
+//            subTaskWaitingQueue.pop_front();
+//        }
+
+        std::list<Task*>::iterator subTaskIt = subTaskWaitingQueue.begin();
+        std::list<Task*>::iterator wholeTaskIt = wholeTaskWaitingQueue.begin();
+        if (subTaskIt != subTaskWaitingQueue.end()) {
+            taskRunning = *subTaskIt;
+            subTaskWaitingQueue.pop_front();
+        } else if (wholeTaskIt != wholeTaskWaitingQueue.end()) {
+            taskRunning = *wholeTaskIt;
+            wholeTaskWaitingQueue.pop_front();
+        }
+
+        if (taskRunning) {
+            double runningTime = taskRunning->getRequiredCycle() / frequency;
+            scheduleAt(omnetpp::simTime()+runningTime, endServiceMsg);
+        }
+
     }
 
-    scheduleAt(omnetpp::simTime()+runningTime, endServiceMsg);
+
 }
 
 Info *Processor::createEdgeServerInfoMsg()
@@ -129,7 +256,13 @@ Info *Processor::createEdgeServerInfoMsg()
     serverInfo->setServerName(getParentModule()->getName());
     serverInfo->setServerFrequency(frequency);
     serverInfo->setServerCapacity(serverCapacity);
-    serverInfo->setTaskCount(taskRunning ? waitingQueue.size() + 1 : waitingQueue.size());
+    if (schedulingAlgo == "FIFO") {
+        serverInfo->setTaskCount(taskRunning ? FIFOwaitingQueue.size() + 1 : FIFOwaitingQueue.size());
+
+    } else if (schedulingAlgo == "Proposed") {
+        serverInfo->setTaskCount(taskRunning ? wholeTaskWaitingQueue.size() + subTaskWaitingQueue.size() + 1
+                : wholeTaskWaitingQueue.size() + subTaskWaitingQueue.size());
+    }
     serverInfo->setTotalRequiredCycle(totalRequiredCycle);
     serverInfo->setTotalMemoryConsumed(totalMemoryConsumed);
     serverInfo->setHopCount(0);

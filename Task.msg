@@ -36,6 +36,7 @@ packet Task
    	int destinationServer;
    	int hopCount;
    	bool isCompleted;
+   	bool fromDispatcher;
    	intVector hopPath;
    	   	
 

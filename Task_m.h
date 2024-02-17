@@ -47,6 +47,7 @@ typedef std::vector<SubTask*> subTaskVector;
  *     int destinationServer;
  *     int hopCount;
  *     bool isCompleted;
+ *     bool fromDispatcher;
  *     intVector hopPath;
  * 
  * 
@@ -76,6 +77,7 @@ class Task : public ::omnetpp::cPacket
     int destinationServer = 0;
     int hopCount = 0;
     bool isCompleted_ = false;
+    bool fromDispatcher = false;
     intVector hopPath;
     int totalSubTaskCount = 0;
     subTaskVector subTaskVec;
@@ -139,6 +141,9 @@ class Task : public ::omnetpp::cPacket
 
     virtual bool isCompleted() const;
     virtual void setIsCompleted(bool isCompleted);
+
+    virtual bool getFromDispatcher() const;
+    virtual void setFromDispatcher(bool fromDispatcher);
 
     virtual const intVector& getHopPath() const;
     virtual intVector& getHopPathForUpdate() { return const_cast<intVector&>(const_cast<Task*>(this)->getHopPath());}

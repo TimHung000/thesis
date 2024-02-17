@@ -3,6 +3,7 @@
 
 #include <omnetpp.h>
 #include "Info_m.h"
+#include <string>
 
 
 class Task;
@@ -10,11 +11,18 @@ class Task;
 class Processor : public omnetpp::cSimpleModule
 {
     private:
-        std::list<Task*> waitingQueue;    // unfinshed or unprocessed tasks
+        std::list<Task*> FIFOwaitingQueue;           // unfinshed or unprocessed tasks
+
+        std::list<Task*> wholeTaskWaitingQueue;       // for non split task
+        std::list<Task*> subTaskWaitingQueue;        // for sub task
+
         Task *taskRunning = nullptr;      // the task that is processing
-        std::vector<double> frequencyList;
-        std::vector<double> serverCapacityVector;
         int serverId;
+        double maxFrequency;
+        double minFrequency;
+        double memoryMultiple;
+        std::string schedulingAlgo;
+
         double frequency;
         double serverCapacity;
         double totalRequiredCycle;
@@ -24,9 +32,14 @@ class Processor : public omnetpp::cSimpleModule
 
         omnetpp::cMessage *endServiceMsg = nullptr;
         omnetpp::cMessage *statusReportMsg = nullptr;
-        omnetpp::simsignal_t busySignal;
-        omnetpp::simsignal_t cpuFrequencySignal;
+        omnetpp::cMessage *reportMsg = nullptr;
 
+        double totalTaskFinished;
+        double totalTaskCompleted;
+        omnetpp::simsignal_t memoryLoadingSignal;
+        omnetpp::simsignal_t CPULoadingSignal;
+        omnetpp::simsignal_t totalTaskFinishedSignal;
+        omnetpp::simsignal_t totalTaskCompletedSignal;
 
     protected:
         virtual void initialize() override;

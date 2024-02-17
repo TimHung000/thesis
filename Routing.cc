@@ -28,21 +28,21 @@ void Routing::initialize()
 
     std::vector<std::string> nedTypes;
     nedTypes.push_back(getParentModule()->getNedTypeName());
-    EV << "nedTypes Name " << getParentModule()->getNedTypeName()<< " nodes\n";
+//    EV << "nedTypes Name " << getParentModule()->getNedTypeName()<< " nodes\n";
 
     topo->extractByNedTypeName(nedTypes);
-    EV << "cTopology found " << topo->getNumNodes() << " nodes\n";
+//    EV << "cTopology found " << topo->getNumNodes() << " nodes\n";
 
     omnetpp::cTopology::Node *thisNode = topo->getNodeFor(getParentModule());
     std::vector<omnetpp::cTopology::Link*> linkToDelete;
     for (int i = 0; i < thisNode->getNumOutLinks(); ++i) {
-        EV << "OutLink " << i << " is " << thisNode->getLinkOut(i)->getLocalGate()->getBaseName() << omnetpp::endl;
+//        EV << "OutLink " << i << " is " << thisNode->getLinkOut(i)->getLocalGate()->getBaseName() << omnetpp::endl;
         if (std::strcmp(thisNode->getLinkOut(i)->getLocalGate()->getBaseName(), "infoPorts") == 0) {
             linkToDelete.push_back(thisNode->getLinkOut(i));
         }
     }
     for (int i = 0; i < thisNode->getNumInLinks(); ++i) {
-        EV << "InLink " << i << " is " << thisNode->getLinkIn(i)->getLocalGate()->getBaseName() << omnetpp::endl;
+//        EV << "InLink " << i << " is " << thisNode->getLinkIn(i)->getLocalGate()->getBaseName() << omnetpp::endl;
         if (std::strcmp(thisNode->getLinkIn(i)->getLocalGate()->getBaseName(), "infoPorts") == 0) {
             linkToDelete.push_back(thisNode->getLinkIn(i));
         }
@@ -69,7 +69,7 @@ void Routing::initialize()
         int gateIndex = parentModuleGate->getIndex();
         int serverId = topo->getNode(i)->getModule()->getIndex();
         rtable[serverId] = gateIndex;
-        EV << "  towards server id: " << serverId << " gateIndex is " << gateIndex << omnetpp::endl;
+//        EV << "  towards server id: " << serverId << " gateIndex is " << gateIndex << omnetpp::endl;
     }
     delete topo;
 }
@@ -78,24 +78,24 @@ void Routing::handleMessage(omnetpp::cMessage *msg)
 {
     Task *task = omnetpp::check_and_cast<Task *>(msg);
     int destinationServerId = task->getDestinationServer();
-    EV << "destination "<< destinationServerId << omnetpp::endl;
+//    EV << "destination "<< destinationServerId << omnetpp::endl;
     if (destinationServerId == serverId) {
-        EV << "send task to local dispatcher " << task->getName() << omnetpp::endl;
+//        EV << "send task to local dispatcher " << task->getName() << omnetpp::endl;
         send(task, "localOut");
         return;
     }
 
     RoutingTable::iterator it = rtable.find(destinationServerId);
     if (it == rtable.end()) {
-        EV << "serverId:  " << destinationServerId << " unreachable, discarding packet " << task->getName() << omnetpp::endl;
+//        EV << "serverId:  " << destinationServerId << " unreachable, discarding packet " << task->getName() << omnetpp::endl;
         cancelAndDelete(task);
         return;
     }
 
     int outGateIndex = (*it).second;
-    EV << "forwarding task " << task->getName() << " on gate index " << outGateIndex << omnetpp::endl;
-    EV << gate("out", outGateIndex)->getNextGate()->getNextGate() << omnetpp::endl;
-    EV << "outgate connect to server " << gate("out", outGateIndex)->getNextGate()->getNextGate()->getOwnerModule()->getIndex() << omnetpp::endl;
+//    EV << "forwarding task " << task->getName() << " on gate index " << outGateIndex << omnetpp::endl;
+//    EV << gate("out", outGateIndex)->getNextGate()->getNextGate() << omnetpp::endl;
+//    EV << "outgate connect to server " << gate("out", outGateIndex)->getNextGate()->getNextGate()->getOwnerModule()->getIndex() << omnetpp::endl;
     task->setHopCount(task->getHopCount()+1);
     intVector& hopPathForUpdate = task->getHopPathForUpdate();
     hopPathForUpdate.push_back(serverId);

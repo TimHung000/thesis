@@ -18,8 +18,10 @@ simple Dispatcher
     parameters:
         double memoryThreshold = 0.8;
         int maximumHop = 10;
-        string algorithm;
+        string dispatchingAlgo;
         @display("i=abstract/dispatcher");
+        @signal[totalTaskDrop](type="double");
+        @statistic[totalTaskDrop](title="totalTaskDrop";source="totalTaskDrop";record=vector);
         
     gates:
         input taskIn[];

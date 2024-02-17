@@ -12,10 +12,11 @@ void Source::initialize()
     serverId = getParentModule()->getIndex();
     userId = getIndex();
     taskCounter = 0;
-    minTaskSize = par("minTaskSize").doubleValue();       // MB
-    maxTaskSize = par("maxTaskSize").doubleValue();       // MB
-    minDeadline = par("minDeadline").doubleValue();       // ms
-    maxDeadline = par("maxDeadline").doubleValue();       // ms
+    minRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue();       // M
+    maxRequiredCPUCycle = par("maxRequiredCPUCycle").doubleValue();       // M
+    taskSizeMultiple = par("taskSizeMultiple").doubleValue();
+    minDeadline = par("minDeadline").doubleValue();                       // ms
+    maxDeadline = par("maxDeadline").doubleValue();                       // ms
     minSubTaskCount = static_cast<int>(par("minSubTaskCount").doubleValue());
     maxSubTaskCount = static_cast<int>(par("maxSubTaskCount").doubleValue());
 
@@ -47,28 +48,35 @@ Task *Source::createTask()
     task->setTotalWaitingTime(omnetpp::SimTime::ZERO);
     task->setTotalProcessingTime(omnetpp::SimTime::ZERO);
     task->setTotalPropagationTime(omnetpp::SimTime::ZERO);
-    int randTaskSize = minTaskSize + intrand(maxTaskSize-minTaskSize);
-    double taskSize = static_cast<double>(randTaskSize) * 1e6;
-    task->setTaskSize(taskSize);
-    double requiredCPUCycle = taskSize * 5;
+    task->setFinishedTime(omnetpp::SimTime::ZERO);
+
+    int randRequiredCPUCycle = minRequiredCPUCycle + intrand(maxRequiredCPUCycle - minRequiredCPUCycle + 1);
+    double requiredCPUCycle = static_cast<double>(randRequiredCPUCycle) * 1e6;
     task->setRequiredCycle(requiredCPUCycle);
-    int randDeadline = minDeadline + intrand(maxDeadline-minDeadline);
+
+    double taskSize = requiredCPUCycle * taskSizeMultiple;
+    task->setTaskSize(taskSize);
+
+    int randDeadline = minDeadline + intrand(maxDeadline - minDeadline + 1);
     double deadline = static_cast<double>(randDeadline) * 1e-3;
     task->setDeadline(deadline);
+
     task->setProcessedCycle(0.0);
     task->setArrivingServer(serverId);
     task->setRunningServer(-1);
     task->setDestinationServer(serverId);
     task->setHopCount(0);
     task->setIsCompleted(false);
-    int randSubTaskCount = minSubTaskCount + intrand(maxSubTaskCount-minSubTaskCount);
+    task->setFromDispatcher(false);
+
+    int randSubTaskCount = minSubTaskCount + intrand(maxSubTaskCount - minSubTaskCount + 1);
     task->setTotalSubTaskCount(randSubTaskCount);
 
     std::vector<int> weightVec;
-    int totalWeight;
+    int totalWeight = 0;
     int curRand;
     for (int i = 0; i < randSubTaskCount; ++i) {
-        curRand = 1 + intrand(5);
+        curRand = 1 + intrand(5);  // 1~5
         weightVec.push_back(curRand);
         totalWeight += curRand;
     }
@@ -89,6 +97,18 @@ Task *Source::createTask()
     }
     subTask = new SubTask(randSubTaskCount-1, remainedTaskSize, remainedRequiredCPUCycle);
     subTaskVec.push_back(subTask);
+
+    double totalSubTaskSize = 0;
+    double totalSubTaskRequiredCPUCycle = 0;
+
+    for (int i = 0; i < subTaskVec.size(); ++i){
+        totalSubTaskSize += task->getSubTaskVec()[i]->getSubTaskSize();
+        totalSubTaskRequiredCPUCycle += task->getSubTaskVec()[i]->getSubTaskRequiredCPUCycle();
+    }
+    ASSERT(task->getTaskSize() > 0);
+    ASSERT(totalSubTaskRequiredCPUCycle > 0);
+    ASSERT(totalSubTaskSize == task->getTaskSize());
+    ASSERT(totalSubTaskRequiredCPUCycle == task->getRequiredCycle());
 
     return task;
 }

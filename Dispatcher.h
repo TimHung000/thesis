@@ -14,7 +14,11 @@ class Dispatcher : public omnetpp::cSimpleModule
         int maximumHop;
         double memoryThreshold;
         int serverId;
-        std::string algorithm;
+        std::string dispatchingAlgo;
+
+        omnetpp::simsignal_t totalTaskDropSignal;
+        omnetpp::cMessage *reportMsg = nullptr;
+        double totalTaskDrop;
     protected:
         virtual void initialize() override;
         virtual void handleMessage(omnetpp::cMessage *msg) override;

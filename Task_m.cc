@@ -760,6 +760,7 @@ void Task::copy(const Task& other)
     this->destinationServer = other.destinationServer;
     this->hopCount = other.hopCount;
     this->isCompleted_ = other.isCompleted_;
+    this->fromDispatcher = other.fromDispatcher;
     this->hopPath = other.hopPath;
     this->totalSubTaskCount = other.totalSubTaskCount;
     this->subTaskVec = other.subTaskVec;
@@ -783,6 +784,7 @@ void Task::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->destinationServer);
     doParsimPacking(b,this->hopCount);
     doParsimPacking(b,this->isCompleted_);
+    doParsimPacking(b,this->fromDispatcher);
     doParsimPacking(b,this->hopPath);
     doParsimPacking(b,this->totalSubTaskCount);
     doParsimPacking(b,this->subTaskVec);
@@ -806,6 +808,7 @@ void Task::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->destinationServer);
     doParsimUnpacking(b,this->hopCount);
     doParsimUnpacking(b,this->isCompleted_);
+    doParsimUnpacking(b,this->fromDispatcher);
     doParsimUnpacking(b,this->hopPath);
     doParsimUnpacking(b,this->totalSubTaskCount);
     doParsimUnpacking(b,this->subTaskVec);
@@ -961,6 +964,16 @@ void Task::setIsCompleted(bool isCompleted)
     this->isCompleted_ = isCompleted;
 }
 
+bool Task::getFromDispatcher() const
+{
+    return this->fromDispatcher;
+}
+
+void Task::setFromDispatcher(bool fromDispatcher)
+{
+    this->fromDispatcher = fromDispatcher;
+}
+
 const intVector& Task::getHopPath() const
 {
     return this->hopPath;
@@ -1011,6 +1024,7 @@ class TaskDescriptor : public omnetpp::cClassDescriptor
         FIELD_destinationServer,
         FIELD_hopCount,
         FIELD_isCompleted,
+        FIELD_fromDispatcher,
         FIELD_hopPath,
         FIELD_totalSubTaskCount,
         FIELD_subTaskVec,
@@ -1080,7 +1094,7 @@ const char *TaskDescriptor::getProperty(const char *propertyName) const
 int TaskDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 18+base->getFieldCount() : 18;
+    return base ? 19+base->getFieldCount() : 19;
 }
 
 unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
@@ -1107,11 +1121,12 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_destinationServer
         FD_ISEDITABLE,    // FIELD_hopCount
         FD_ISEDITABLE,    // FIELD_isCompleted
+        FD_ISEDITABLE,    // FIELD_fromDispatcher
         FD_ISCOMPOUND,    // FIELD_hopPath
         FD_ISEDITABLE,    // FIELD_totalSubTaskCount
         FD_ISCOMPOUND,    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 18) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 19) ? fieldTypeFlags[field] : 0;
 }
 
 const char *TaskDescriptor::getFieldName(int field) const
@@ -1138,11 +1153,12 @@ const char *TaskDescriptor::getFieldName(int field) const
         "destinationServer",
         "hopCount",
         "isCompleted",
+        "fromDispatcher",
         "hopPath",
         "totalSubTaskCount",
         "subTaskVec",
     };
-    return (field >= 0 && field < 18) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 19) ? fieldNames[field] : nullptr;
 }
 
 int TaskDescriptor::findField(const char *fieldName) const
@@ -1164,9 +1180,10 @@ int TaskDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "destinationServer") == 0) return baseIndex + 12;
     if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 13;
     if (strcmp(fieldName, "isCompleted") == 0) return baseIndex + 14;
-    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 15;
-    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 16;
-    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 17;
+    if (strcmp(fieldName, "fromDispatcher") == 0) return baseIndex + 15;
+    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 16;
+    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 17;
+    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 18;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -1194,11 +1211,12 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_destinationServer
         "int",    // FIELD_hopCount
         "bool",    // FIELD_isCompleted
+        "bool",    // FIELD_fromDispatcher
         "intVector",    // FIELD_hopPath
         "int",    // FIELD_totalSubTaskCount
         "subTaskVector",    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 18) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 19) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **TaskDescriptor::getFieldPropertyNames(int field) const
@@ -1296,6 +1314,7 @@ std::string TaskDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_destinationServer: return long2string(pp->getDestinationServer());
         case FIELD_hopCount: return long2string(pp->getHopCount());
         case FIELD_isCompleted: return bool2string(pp->isCompleted());
+        case FIELD_fromDispatcher: return bool2string(pp->getFromDispatcher());
         case FIELD_hopPath: return "";
         case FIELD_totalSubTaskCount: return long2string(pp->getTotalSubTaskCount());
         case FIELD_subTaskVec: return "";
@@ -1330,6 +1349,7 @@ void TaskDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_destinationServer: pp->setDestinationServer(string2long(value)); break;
         case FIELD_hopCount: pp->setHopCount(string2long(value)); break;
         case FIELD_isCompleted: pp->setIsCompleted(string2bool(value)); break;
+        case FIELD_fromDispatcher: pp->setFromDispatcher(string2bool(value)); break;
         case FIELD_totalSubTaskCount: pp->setTotalSubTaskCount(string2long(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Task'", field);
     }
@@ -1360,6 +1380,7 @@ omnetpp::cValue TaskDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_destinationServer: return pp->getDestinationServer();
         case FIELD_hopCount: return pp->getHopCount();
         case FIELD_isCompleted: return pp->isCompleted();
+        case FIELD_fromDispatcher: return pp->getFromDispatcher();
         case FIELD_hopPath: return omnetpp::toAnyPtr(&pp->getHopPath()); break;
         case FIELD_totalSubTaskCount: return pp->getTotalSubTaskCount();
         case FIELD_subTaskVec: return omnetpp::toAnyPtr(&pp->getSubTaskVec()); break;
@@ -1394,6 +1415,7 @@ void TaskDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
         case FIELD_destinationServer: pp->setDestinationServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_hopCount: pp->setHopCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_isCompleted: pp->setIsCompleted(value.boolValue()); break;
+        case FIELD_fromDispatcher: pp->setFromDispatcher(value.boolValue()); break;
         case FIELD_totalSubTaskCount: pp->setTotalSubTaskCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Task'", field);
     }
