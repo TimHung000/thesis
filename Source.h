@@ -26,8 +26,8 @@ class Source : public omnetpp::cSimpleModule
         double minRequiredCPUCycle;     // M
         double maxRequiredCPUCycle;     // M
         double taskSizeMultiple;
-        double minDeadline;     // ms
-        double maxDeadline;     // ms
+        double minDelayTolerance;     // ms
+        double maxDelayTolerance;     // ms
         int minSubTaskCount;
         int maxSubTaskCount;
 

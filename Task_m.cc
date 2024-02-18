@@ -751,7 +751,7 @@ void Task::copy(const Task& other)
     this->totalProcessingTime = other.totalProcessingTime;
     this->totalPropagationTime = other.totalPropagationTime;
     this->finishedTime = other.finishedTime;
-    this->deadline = other.deadline;
+    this->delayTolerance = other.delayTolerance;
     this->taskSize = other.taskSize;
     this->requiredCycle = other.requiredCycle;
     this->processedCycle = other.processedCycle;
@@ -760,7 +760,6 @@ void Task::copy(const Task& other)
     this->destinationServer = other.destinationServer;
     this->hopCount = other.hopCount;
     this->isCompleted_ = other.isCompleted_;
-    this->fromDispatcher = other.fromDispatcher;
     this->hopPath = other.hopPath;
     this->totalSubTaskCount = other.totalSubTaskCount;
     this->subTaskVec = other.subTaskVec;
@@ -775,7 +774,7 @@ void Task::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->totalProcessingTime);
     doParsimPacking(b,this->totalPropagationTime);
     doParsimPacking(b,this->finishedTime);
-    doParsimPacking(b,this->deadline);
+    doParsimPacking(b,this->delayTolerance);
     doParsimPacking(b,this->taskSize);
     doParsimPacking(b,this->requiredCycle);
     doParsimPacking(b,this->processedCycle);
@@ -784,7 +783,6 @@ void Task::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->destinationServer);
     doParsimPacking(b,this->hopCount);
     doParsimPacking(b,this->isCompleted_);
-    doParsimPacking(b,this->fromDispatcher);
     doParsimPacking(b,this->hopPath);
     doParsimPacking(b,this->totalSubTaskCount);
     doParsimPacking(b,this->subTaskVec);
@@ -799,7 +797,7 @@ void Task::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->totalProcessingTime);
     doParsimUnpacking(b,this->totalPropagationTime);
     doParsimUnpacking(b,this->finishedTime);
-    doParsimUnpacking(b,this->deadline);
+    doParsimUnpacking(b,this->delayTolerance);
     doParsimUnpacking(b,this->taskSize);
     doParsimUnpacking(b,this->requiredCycle);
     doParsimUnpacking(b,this->processedCycle);
@@ -808,7 +806,6 @@ void Task::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->destinationServer);
     doParsimUnpacking(b,this->hopCount);
     doParsimUnpacking(b,this->isCompleted_);
-    doParsimUnpacking(b,this->fromDispatcher);
     doParsimUnpacking(b,this->hopPath);
     doParsimUnpacking(b,this->totalSubTaskCount);
     doParsimUnpacking(b,this->subTaskVec);
@@ -874,14 +871,14 @@ void Task::setFinishedTime(omnetpp::simtime_t finishedTime)
     this->finishedTime = finishedTime;
 }
 
-omnetpp::simtime_t Task::getDeadline() const
+omnetpp::simtime_t Task::getDelayTolerance() const
 {
-    return this->deadline;
+    return this->delayTolerance;
 }
 
-void Task::setDeadline(omnetpp::simtime_t deadline)
+void Task::setDelayTolerance(omnetpp::simtime_t delayTolerance)
 {
-    this->deadline = deadline;
+    this->delayTolerance = delayTolerance;
 }
 
 double Task::getTaskSize() const
@@ -964,16 +961,6 @@ void Task::setIsCompleted(bool isCompleted)
     this->isCompleted_ = isCompleted;
 }
 
-bool Task::getFromDispatcher() const
-{
-    return this->fromDispatcher;
-}
-
-void Task::setFromDispatcher(bool fromDispatcher)
-{
-    this->fromDispatcher = fromDispatcher;
-}
-
 const intVector& Task::getHopPath() const
 {
     return this->hopPath;
@@ -1015,7 +1002,7 @@ class TaskDescriptor : public omnetpp::cClassDescriptor
         FIELD_totalProcessingTime,
         FIELD_totalPropagationTime,
         FIELD_finishedTime,
-        FIELD_deadline,
+        FIELD_delayTolerance,
         FIELD_taskSize,
         FIELD_requiredCycle,
         FIELD_processedCycle,
@@ -1024,7 +1011,6 @@ class TaskDescriptor : public omnetpp::cClassDescriptor
         FIELD_destinationServer,
         FIELD_hopCount,
         FIELD_isCompleted,
-        FIELD_fromDispatcher,
         FIELD_hopPath,
         FIELD_totalSubTaskCount,
         FIELD_subTaskVec,
@@ -1094,7 +1080,7 @@ const char *TaskDescriptor::getProperty(const char *propertyName) const
 int TaskDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 19+base->getFieldCount() : 19;
+    return base ? 18+base->getFieldCount() : 18;
 }
 
 unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
@@ -1112,7 +1098,7 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_totalProcessingTime
         FD_ISEDITABLE,    // FIELD_totalPropagationTime
         FD_ISEDITABLE,    // FIELD_finishedTime
-        FD_ISEDITABLE,    // FIELD_deadline
+        FD_ISEDITABLE,    // FIELD_delayTolerance
         FD_ISEDITABLE,    // FIELD_taskSize
         FD_ISEDITABLE,    // FIELD_requiredCycle
         FD_ISEDITABLE,    // FIELD_processedCycle
@@ -1121,12 +1107,11 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_destinationServer
         FD_ISEDITABLE,    // FIELD_hopCount
         FD_ISEDITABLE,    // FIELD_isCompleted
-        FD_ISEDITABLE,    // FIELD_fromDispatcher
         FD_ISCOMPOUND,    // FIELD_hopPath
         FD_ISEDITABLE,    // FIELD_totalSubTaskCount
         FD_ISCOMPOUND,    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 19) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 18) ? fieldTypeFlags[field] : 0;
 }
 
 const char *TaskDescriptor::getFieldName(int field) const
@@ -1144,7 +1129,7 @@ const char *TaskDescriptor::getFieldName(int field) const
         "totalProcessingTime",
         "totalPropagationTime",
         "finishedTime",
-        "deadline",
+        "delayTolerance",
         "taskSize",
         "requiredCycle",
         "processedCycle",
@@ -1153,12 +1138,11 @@ const char *TaskDescriptor::getFieldName(int field) const
         "destinationServer",
         "hopCount",
         "isCompleted",
-        "fromDispatcher",
         "hopPath",
         "totalSubTaskCount",
         "subTaskVec",
     };
-    return (field >= 0 && field < 19) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 18) ? fieldNames[field] : nullptr;
 }
 
 int TaskDescriptor::findField(const char *fieldName) const
@@ -1171,7 +1155,7 @@ int TaskDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "totalProcessingTime") == 0) return baseIndex + 3;
     if (strcmp(fieldName, "totalPropagationTime") == 0) return baseIndex + 4;
     if (strcmp(fieldName, "finishedTime") == 0) return baseIndex + 5;
-    if (strcmp(fieldName, "deadline") == 0) return baseIndex + 6;
+    if (strcmp(fieldName, "delayTolerance") == 0) return baseIndex + 6;
     if (strcmp(fieldName, "taskSize") == 0) return baseIndex + 7;
     if (strcmp(fieldName, "requiredCycle") == 0) return baseIndex + 8;
     if (strcmp(fieldName, "processedCycle") == 0) return baseIndex + 9;
@@ -1180,10 +1164,9 @@ int TaskDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "destinationServer") == 0) return baseIndex + 12;
     if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 13;
     if (strcmp(fieldName, "isCompleted") == 0) return baseIndex + 14;
-    if (strcmp(fieldName, "fromDispatcher") == 0) return baseIndex + 15;
-    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 16;
-    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 17;
-    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 18;
+    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 15;
+    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 16;
+    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 17;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -1202,7 +1185,7 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "omnetpp::simtime_t",    // FIELD_totalProcessingTime
         "omnetpp::simtime_t",    // FIELD_totalPropagationTime
         "omnetpp::simtime_t",    // FIELD_finishedTime
-        "omnetpp::simtime_t",    // FIELD_deadline
+        "omnetpp::simtime_t",    // FIELD_delayTolerance
         "double",    // FIELD_taskSize
         "double",    // FIELD_requiredCycle
         "double",    // FIELD_processedCycle
@@ -1211,12 +1194,11 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_destinationServer
         "int",    // FIELD_hopCount
         "bool",    // FIELD_isCompleted
-        "bool",    // FIELD_fromDispatcher
         "intVector",    // FIELD_hopPath
         "int",    // FIELD_totalSubTaskCount
         "subTaskVector",    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 19) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 18) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **TaskDescriptor::getFieldPropertyNames(int field) const
@@ -1305,7 +1287,7 @@ std::string TaskDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_totalProcessingTime: return simtime2string(pp->getTotalProcessingTime());
         case FIELD_totalPropagationTime: return simtime2string(pp->getTotalPropagationTime());
         case FIELD_finishedTime: return simtime2string(pp->getFinishedTime());
-        case FIELD_deadline: return simtime2string(pp->getDeadline());
+        case FIELD_delayTolerance: return simtime2string(pp->getDelayTolerance());
         case FIELD_taskSize: return double2string(pp->getTaskSize());
         case FIELD_requiredCycle: return double2string(pp->getRequiredCycle());
         case FIELD_processedCycle: return double2string(pp->getProcessedCycle());
@@ -1314,7 +1296,6 @@ std::string TaskDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_destinationServer: return long2string(pp->getDestinationServer());
         case FIELD_hopCount: return long2string(pp->getHopCount());
         case FIELD_isCompleted: return bool2string(pp->isCompleted());
-        case FIELD_fromDispatcher: return bool2string(pp->getFromDispatcher());
         case FIELD_hopPath: return "";
         case FIELD_totalSubTaskCount: return long2string(pp->getTotalSubTaskCount());
         case FIELD_subTaskVec: return "";
@@ -1340,7 +1321,7 @@ void TaskDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_totalProcessingTime: pp->setTotalProcessingTime(string2simtime(value)); break;
         case FIELD_totalPropagationTime: pp->setTotalPropagationTime(string2simtime(value)); break;
         case FIELD_finishedTime: pp->setFinishedTime(string2simtime(value)); break;
-        case FIELD_deadline: pp->setDeadline(string2simtime(value)); break;
+        case FIELD_delayTolerance: pp->setDelayTolerance(string2simtime(value)); break;
         case FIELD_taskSize: pp->setTaskSize(string2double(value)); break;
         case FIELD_requiredCycle: pp->setRequiredCycle(string2double(value)); break;
         case FIELD_processedCycle: pp->setProcessedCycle(string2double(value)); break;
@@ -1349,7 +1330,6 @@ void TaskDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_destinationServer: pp->setDestinationServer(string2long(value)); break;
         case FIELD_hopCount: pp->setHopCount(string2long(value)); break;
         case FIELD_isCompleted: pp->setIsCompleted(string2bool(value)); break;
-        case FIELD_fromDispatcher: pp->setFromDispatcher(string2bool(value)); break;
         case FIELD_totalSubTaskCount: pp->setTotalSubTaskCount(string2long(value)); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Task'", field);
     }
@@ -1371,7 +1351,7 @@ omnetpp::cValue TaskDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_totalProcessingTime: return pp->getTotalProcessingTime().dbl();
         case FIELD_totalPropagationTime: return pp->getTotalPropagationTime().dbl();
         case FIELD_finishedTime: return pp->getFinishedTime().dbl();
-        case FIELD_deadline: return pp->getDeadline().dbl();
+        case FIELD_delayTolerance: return pp->getDelayTolerance().dbl();
         case FIELD_taskSize: return pp->getTaskSize();
         case FIELD_requiredCycle: return pp->getRequiredCycle();
         case FIELD_processedCycle: return pp->getProcessedCycle();
@@ -1380,7 +1360,6 @@ omnetpp::cValue TaskDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_destinationServer: return pp->getDestinationServer();
         case FIELD_hopCount: return pp->getHopCount();
         case FIELD_isCompleted: return pp->isCompleted();
-        case FIELD_fromDispatcher: return pp->getFromDispatcher();
         case FIELD_hopPath: return omnetpp::toAnyPtr(&pp->getHopPath()); break;
         case FIELD_totalSubTaskCount: return pp->getTotalSubTaskCount();
         case FIELD_subTaskVec: return omnetpp::toAnyPtr(&pp->getSubTaskVec()); break;
@@ -1406,7 +1385,7 @@ void TaskDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
         case FIELD_totalProcessingTime: pp->setTotalProcessingTime(value.doubleValue()); break;
         case FIELD_totalPropagationTime: pp->setTotalPropagationTime(value.doubleValue()); break;
         case FIELD_finishedTime: pp->setFinishedTime(value.doubleValue()); break;
-        case FIELD_deadline: pp->setDeadline(value.doubleValue()); break;
+        case FIELD_delayTolerance: pp->setDelayTolerance(value.doubleValue()); break;
         case FIELD_taskSize: pp->setTaskSize(value.doubleValue()); break;
         case FIELD_requiredCycle: pp->setRequiredCycle(value.doubleValue()); break;
         case FIELD_processedCycle: pp->setProcessedCycle(value.doubleValue()); break;
@@ -1415,7 +1394,6 @@ void TaskDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
         case FIELD_destinationServer: pp->setDestinationServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_hopCount: pp->setHopCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_isCompleted: pp->setIsCompleted(value.boolValue()); break;
-        case FIELD_fromDispatcher: pp->setFromDispatcher(value.boolValue()); break;
         case FIELD_totalSubTaskCount: pp->setTotalSubTaskCount(omnetpp::checked_int_cast<int>(value.intValue())); break;
         default: throw omnetpp::cRuntimeError("Cannot set field %d of class 'Task'", field);
     }

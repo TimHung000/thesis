@@ -32,10 +32,8 @@ network EdgeEnv
     connections:
         for row=0..rows-1, for col=0..cols-1 {
             edgeServer[row * cols + col].ports++ <--> {  delay = 5ms; } <--> edgeServer[row * cols + col + 1].ports++ if col + 1 != cols;
-            edgeServer[row * cols + col].infoPorts++ <--> IdealChannel <--> edgeServer[row * cols + col + 1].infoPorts++ if col + 1 != cols;
 
             edgeServer[row * cols + col].ports++ <--> {  delay = 5ms; } <--> edgeServer[(row + 1) * cols + col].ports++ if row + 1 != rows;
-            edgeServer[row * cols + col].infoPorts++ <--> IdealChannel <--> edgeServer[(row + 1) * cols + col].infoPorts++ if row + 1 != rows;
         }
         for i=0..rows * cols - 1 {
             edgeServer[i].taskFinishedOut --> IdealChannel --> finishedTaskCollector.in++;

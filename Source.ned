@@ -21,8 +21,8 @@ simple Source
         double minRequiredCPUCycle; // M
         double maxRequiredCPUCycle; // M
         double taskSizeMultiple;
-        double minDeadline; // ms
-        double maxDeadline; // ms
+        double minDelayTolerance; // ms
+        double maxDelayTolerance; // ms
         double minSubTaskCount;
         double maxSubTaskCount;
     gates:

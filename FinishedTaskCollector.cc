@@ -32,7 +32,6 @@ void FinishedTaskCollector::initialize()
     isCompletedSignal = registerSignal("isCompleted");
 //    totalSubTaskCountSignal = registerSignal("totalSubTaskCount");
     partialCompleteSignal = registerSignal("partialComplete");
-    partialCompleteFromDispatcherSignal = registerSignal("partialCompleteFromDispatcher");
 }
 
 void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
@@ -85,7 +84,6 @@ void FinishedTaskCollector::emitSignal(Task *task) {
     emit(isCompletedSignal, task->isCompleted());
 //    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
     emit(partialCompleteSignal, false);
-    emit(partialCompleteFromDispatcherSignal, false);
     cancelAndDelete(task);
 }
 
@@ -97,7 +95,6 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
     bool isCompleted = true;
     bool containCompletedTask = false;
     bool containNotCompletedTask = false;
-    bool hasFromDispatcher = false;
     int subTaskCount = 0;
     for (int i = 0; i < subTaskVector.size(); ++i) {
         task = subTaskVector[i];
@@ -109,8 +106,6 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
             containCompletedTask = true;
         else
             containNotCompletedTask = true;
-        if (task->getFromDispatcher())
-            hasFromDispatcher = true;
         subTaskCount += task->getSubTaskVec().size();
     }
 
@@ -133,7 +128,6 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
     emit(isCompletedSignal, isCompleted);
 //    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
     emit(partialCompleteSignal, (containCompletedTask && containNotCompletedTask));
-    emit(partialCompleteFromDispatcherSignal, (containCompletedTask && containNotCompletedTask && hasFromDispatcher));
 
     for (int i = 0; i < subTaskVector.size(); ++i) {
         task = subTaskVector[i];

@@ -32,7 +32,6 @@ simple FinishedTaskCollector
         @signal[isCompleted](type="bool");
 //        @signal[totalSubTaskCount](type="int");
 		@signal[partialComplete](type="bool");
-		@signal[partialCompleteFromDispatcher](type="bool");
 //        @statistic[taskId](title="task id";source="taskId";record=vector);
 //        @statistic[creationTime](title="creation time of arrived jobs";source="creationTime";record=vector);
 //        @statistic[totalWaitingTime](title="the total time spent in waiting queue";source="totalWaitingTime";record=vector);
@@ -49,7 +48,6 @@ simple FinishedTaskCollector
         @statistic[isCompleted](title="task status";source="isCompleted";record=count,sum,mean);
 //        @statistic[totalSubTaskCount](title="sub task count";source="totalSubTaskCount";record=vector);
 		@statistic[partialComplete](title="partial complete";source="partialComplete";record=count,sum);
-        @statistic[partialCompleteFromDispatcher](title="partialCompleteFromDispatcher";source="partialCompleteFromDispatcher";record=count,sum);
     gates:
         input in[];
 }

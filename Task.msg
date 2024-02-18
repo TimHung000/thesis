@@ -27,7 +27,7 @@ packet Task
     simtime_t totalProcessingTime;      // total time spent in processing
     simtime_t totalPropagationTime;     // total time spent in propagation
     simtime_t finishedTime;
-   	simtime_t deadline;				 	// task need to finish before creattionTime + deadline
+   	simtime_t delayTolerance;			// task need to finish before creattionTime + delayTolerance
    	double taskSize;				    // bytes
    	double requiredCycle;
    	double processedCycle;
@@ -36,7 +36,6 @@ packet Task
    	int destinationServer;
    	int hopCount;
    	bool isCompleted;
-   	bool fromDispatcher;
    	intVector hopPath;
    	   	
 

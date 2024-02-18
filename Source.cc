@@ -15,8 +15,8 @@ void Source::initialize()
     minRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue();       // M
     maxRequiredCPUCycle = par("maxRequiredCPUCycle").doubleValue();       // M
     taskSizeMultiple = par("taskSizeMultiple").doubleValue();
-    minDeadline = par("minDeadline").doubleValue();                       // ms
-    maxDeadline = par("maxDeadline").doubleValue();                       // ms
+    minDelayTolerance = par("minDelayTolerance").doubleValue();                       // ms
+    maxDelayTolerance = par("maxDelayTolerance").doubleValue();                       // ms
     minSubTaskCount = static_cast<int>(par("minSubTaskCount").doubleValue());
     maxSubTaskCount = static_cast<int>(par("maxSubTaskCount").doubleValue());
 
@@ -57,9 +57,9 @@ Task *Source::createTask()
     double taskSize = requiredCPUCycle * taskSizeMultiple;
     task->setTaskSize(taskSize);
 
-    int randDeadline = minDeadline + intrand(maxDeadline - minDeadline + 1);
-    double deadline = static_cast<double>(randDeadline) * 1e-3;
-    task->setDeadline(deadline);
+    int randDelayTolerance = minDelayTolerance + intrand(maxDelayTolerance - minDelayTolerance + 1);
+    double delayTolerance = static_cast<double>(randDelayTolerance) * 1e-3;
+    task->setDelayTolerance(delayTolerance);
 
     task->setProcessedCycle(0.0);
     task->setArrivingServer(serverId);
@@ -67,7 +67,6 @@ Task *Source::createTask()
     task->setDestinationServer(serverId);
     task->setHopCount(0);
     task->setIsCompleted(false);
-    task->setFromDispatcher(false);
 
     int randSubTaskCount = minSubTaskCount + intrand(maxSubTaskCount - minSubTaskCount + 1);
     task->setTotalSubTaskCount(randSubTaskCount);

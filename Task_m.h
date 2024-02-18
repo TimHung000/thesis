@@ -38,7 +38,7 @@ typedef std::vector<SubTask*> subTaskVector;
  *     simtime_t totalProcessingTime;      // total time spent in processing
  *     simtime_t totalPropagationTime;     // total time spent in propagation
  *     simtime_t finishedTime;
- *     simtime_t deadline;				 	// task need to finish before creattionTime + deadline
+ *     simtime_t delayTolerance;			// task need to finish before creattionTime + delayTolerance
  *     double taskSize;				    // bytes
  *     double requiredCycle;
  *     double processedCycle;
@@ -47,7 +47,6 @@ typedef std::vector<SubTask*> subTaskVector;
  *     int destinationServer;
  *     int hopCount;
  *     bool isCompleted;
- *     bool fromDispatcher;
  *     intVector hopPath;
  * 
  * 
@@ -68,7 +67,7 @@ class Task : public ::omnetpp::cPacket
     omnetpp::simtime_t totalProcessingTime = SIMTIME_ZERO;
     omnetpp::simtime_t totalPropagationTime = SIMTIME_ZERO;
     omnetpp::simtime_t finishedTime = SIMTIME_ZERO;
-    omnetpp::simtime_t deadline = SIMTIME_ZERO;
+    omnetpp::simtime_t delayTolerance = SIMTIME_ZERO;
     double taskSize = 0;
     double requiredCycle = 0;
     double processedCycle = 0;
@@ -77,7 +76,6 @@ class Task : public ::omnetpp::cPacket
     int destinationServer = 0;
     int hopCount = 0;
     bool isCompleted_ = false;
-    bool fromDispatcher = false;
     intVector hopPath;
     int totalSubTaskCount = 0;
     subTaskVector subTaskVec;
@@ -115,8 +113,8 @@ class Task : public ::omnetpp::cPacket
     virtual omnetpp::simtime_t getFinishedTime() const;
     virtual void setFinishedTime(omnetpp::simtime_t finishedTime);
 
-    virtual omnetpp::simtime_t getDeadline() const;
-    virtual void setDeadline(omnetpp::simtime_t deadline);
+    virtual omnetpp::simtime_t getDelayTolerance() const;
+    virtual void setDelayTolerance(omnetpp::simtime_t delayTolerance);
 
     virtual double getTaskSize() const;
     virtual void setTaskSize(double taskSize);
@@ -141,9 +139,6 @@ class Task : public ::omnetpp::cPacket
 
     virtual bool isCompleted() const;
     virtual void setIsCompleted(bool isCompleted);
-
-    virtual bool getFromDispatcher() const;
-    virtual void setFromDispatcher(bool fromDispatcher);
 
     virtual const intVector& getHopPath() const;
     virtual intVector& getHopPathForUpdate() { return const_cast<intVector&>(const_cast<Task*>(this)->getHopPath());}

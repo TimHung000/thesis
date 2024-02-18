@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-simple Dispatcher
+simple TaskQueue
 {
     parameters:
         double memoryThreshold = 0.8;
@@ -22,10 +22,23 @@ simple Dispatcher
         @display("i=abstract/dispatcher");
         @signal[totalTaskDrop](type="double");
         @statistic[totalTaskDrop](title="totalTaskDrop";source="totalTaskDrop";record=vector);
+        @signal[memoryLoading](type="double");
+        @statistic[memoryLoading](title="double";source="memoryLoading";record=vector);
+        @signal[CPULoading](type="double");        
+        @statistic[CPULoading](title="double";source="CPULoading";record=vector);
+        @signal[totalTaskFinished](type="double");
+        @statistic[totalTaskFinished](title="totalTaskFinished";source="totalTaskFinished";record=vector);
+        @signal[totalTaskCompleted](type="double");
+        @statistic[totalTaskCompleted](title="totalTaskCompleted";source="totalTaskCompleted";record=vector);
         
+                
+        double statusUpadteInterval;  // ms
+        double maxFrequency;          // GHz
+        double minFrequency;          // GHz
+        double memoryMultiple;
+        string schedulingAlgo;
     gates:
         input taskIn[];
-        output localProcessOut;
         output offloadOut;
         output taskFinishedOut;
 }
