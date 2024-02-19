@@ -13,7 +13,7 @@
 // Job generation stops when the number of jobs or the end time has been reached,
 // whichever occurs first. The name, type and priority of jobs can be set as well.
 //
-simple Source
+simple User
 {
     parameters:
         @display("i=block/source");
@@ -25,7 +25,7 @@ simple Source
         double maxDelayTolerance; // ms
         double minSubTaskCount;
         double maxSubTaskCount;
-    gates:
-        output out;
+        string hotSpotServer;
+        double hotSpotLoad;
 }
 

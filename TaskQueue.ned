@@ -26,11 +26,12 @@ simple TaskQueue
         @statistic[memoryLoading](title="double";source="memoryLoading";record=vector);
         @signal[CPULoading](type="double");        
         @statistic[CPULoading](title="double";source="CPULoading";record=vector);
-        @signal[totalTaskFinished](type="double");
-        @statistic[totalTaskFinished](title="totalTaskFinished";source="totalTaskFinished";record=vector);
+        @signal[totalTask](type="double");
+        @statistic[totalTask](title="totalTask";source="totalTask";record=vector);
         @signal[totalTaskCompleted](type="double");
         @statistic[totalTaskCompleted](title="totalTaskCompleted";source="totalTaskCompleted";record=vector);
-        
+        @signal[totalTaskFailed](type="double");
+        @statistic[totalTaskFailed](title="totalTaskFailed";source="totalTaskFailed";record=vector);        
                 
         double statusUpadteInterval;  // ms
         double maxFrequency;          // GHz

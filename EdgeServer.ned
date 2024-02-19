@@ -4,16 +4,12 @@ import ned.IdealChannel;
 module EdgeServer
 {
     parameters:
-        int id;
-        int numUsers;
         @display("i=misc/node_vs,gold");
     gates:
         inout ports[];
         output taskFinishedOut;
+        input userTaskIn;
     submodules:
-        users[numUsers]: Source {
-            @display("p=60,135");
-        }
         taskQueue: TaskQueue {
             @display("p=251,135");
         }
@@ -27,10 +23,8 @@ module EdgeServer
                 out[sizeof(parent.ports)];
         }
     connections:
-        // random genearate tasks
-        for i=0..sizeof(users) - 1 {
-            users[i].out --> IdealChannel --> routing.localIn++;
-        }
+    	
+    	userTaskIn --> IdealChannel --> routing.localIn++;
 
         // task destination is this server, so dispatcher need to decide where task should go
         routing.localOut --> IdealChannel --> taskQueue.taskIn++;

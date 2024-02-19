@@ -32,6 +32,7 @@ void FinishedTaskCollector::initialize()
     isCompletedSignal = registerSignal("isCompleted");
 //    totalSubTaskCountSignal = registerSignal("totalSubTaskCount");
     partialCompleteSignal = registerSignal("partialComplete");
+    totalTimeSignal = registerSignal("totalTime");
 }
 
 void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
@@ -83,7 +84,9 @@ void FinishedTaskCollector::emitSignal(Task *task) {
 //    emit(hopCountSignal, task->getHopCount());
     emit(isCompletedSignal, task->isCompleted());
 //    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
-    emit(partialCompleteSignal, false);
+    if (task->isCompleted()) {
+        emit(totalTimeSignal, task->getFinishedTime() - task->getCreationTime());
+    }
     cancelAndDelete(task);
 }
 
@@ -96,19 +99,22 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
     bool containCompletedTask = false;
     bool containNotCompletedTask = false;
     int subTaskCount = 0;
+    omnetpp::simtime_t creationTime = subTaskVector[0]->getCreationTime();
+    omnetpp::simtime_t finishedTime = subTaskVector[0]->getFinishedTime();
     for (int i = 0; i < subTaskVector.size(); ++i) {
         task = subTaskVector[i];
         totalTaskSize += task->getTaskSize();
         totalRequiredCycle += task->getRequiredCycle();
         isCompleted = isCompleted && task->isCompleted();
-        EV << "sender module: " << task->getSenderModule() << omnetpp::endl;
+        if (finishedTime < subTaskVector[i]->getFinishedTime())
+            finishedTime = subTaskVector[i]->getFinishedTime();
+
         if (task->isCompleted())
             containCompletedTask = true;
         else
             containNotCompletedTask = true;
         subTaskCount += task->getSubTaskVec().size();
     }
-
 
     ASSERT(subTaskCount <= task->getTotalSubTaskCount());
     // task is the last in the vector
@@ -128,7 +134,9 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
     emit(isCompletedSignal, isCompleted);
 //    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
     emit(partialCompleteSignal, (containCompletedTask && containNotCompletedTask));
-
+    if (isCompleted) {
+        emit(totalTimeSignal, finishedTime - creationTime);
+    }
     for (int i = 0; i < subTaskVector.size(); ++i) {
         task = subTaskVector[i];
         cancelAndDelete(task);

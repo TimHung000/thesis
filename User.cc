@@ -1,19 +1,44 @@
-#include "Source.h"
+#include "User.h"
+
 #include "Task_m.h"
 #include "SubTask.h"
 #include <string>
+#include <sstream>
 #include <vector>
 #include <cmath>
+#include <map>
 
-Define_Module(Source);
+Define_Module(User);
 
-void Source::initialize()
+void User::initialize()
 {
-    serverId = getParentModule()->getIndex();
+
     userId = getIndex();
+
+    std::string hotSpotServer = par("hotSpotServer").stdstringValue();
+    std::stringstream ss(hotSpotServer);
+    std::vector<int> hotSpot;
+    int tmp;
+    while (ss >> tmp)
+        hotSpot.push_back(tmp);
+
+    double hotSpotLoad = par("hotSpotLoad").doubleValue();
+    int serverCount = getParentModule()->getSubmoduleVectorSize("edgeServer");
+    int threshold = std::floor(getParentModule()->par("numUsers").intValue() * (1 - hotSpotLoad));
+
+    if (userId < threshold)
+        serverId = intuniform(0, serverCount-1);
+    else {
+        int idx = intuniform(0, hotSpot.size()-1);
+        serverId = hotSpot[idx];
+    }
+
+    serverTaskInGate = getParentModule()->getSubmodule("edgeServer", serverId)->gate("userTaskIn");
+
+
     taskCounter = 0;
-    minRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue();       // M
-    maxRequiredCPUCycle = par("maxRequiredCPUCycle").doubleValue();       // M
+    minRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue();                   // M
+    maxRequiredCPUCycle = par("maxRequiredCPUCycle").doubleValue();                   // M
     taskSizeMultiple = par("taskSizeMultiple").doubleValue();
     minDelayTolerance = par("minDelayTolerance").doubleValue();                       // ms
     maxDelayTolerance = par("maxDelayTolerance").doubleValue();                       // ms
@@ -24,23 +49,23 @@ void Source::initialize()
     scheduleAt(omnetpp::simTime() + par("interArrivalTime").doubleValue(), new omnetpp::cMessage("newTaskTimer"));
 }
 
-void Source::handleMessage(omnetpp::cMessage *msg)
+void User::handleMessage(omnetpp::cMessage *msg)
 {
     ASSERT(msg->isSelfMessage());
 
     if (msg->isSelfMessage()) {
         scheduleAt(omnetpp::simTime() + par("interArrivalTime").doubleValue(), msg);
         Task *task = createTask();
-        send(task, "out");
+        sendDirect(task, serverTaskInGate);
     } else {
         delete msg;
     }
 }
 
-Task *Source::createTask()
+Task *User::createTask()
 {
     char buf[80];
-    sprintf(buf, "task%d-server%d-user%d", ++taskCounter, serverId, userId);
+    sprintf(buf, "task%d-server%d-user%d", ++taskCounter, 0, userId);
     Task *task = new Task(buf);
 
     task->setTaskId(task->getId());
@@ -112,6 +137,6 @@ Task *Source::createTask()
     return task;
 }
 
-void Source::finish()
+void User::finish()
 {
 }

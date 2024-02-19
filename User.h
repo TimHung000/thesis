@@ -7,14 +7,14 @@
 // `license' for details on this and other legal matters.
 //
 
-#ifndef __SOURCE_H
-#define __SOURCE_H
+#ifndef __USER_H
+#define __USER_H
 #include <omnetpp.h>
 #include <vector>
 
 class Task;
 
-class Source : public omnetpp::cSimpleModule
+class User : public omnetpp::cSimpleModule
 {
     private:
         int serverId;
@@ -30,6 +30,7 @@ class Source : public omnetpp::cSimpleModule
         double maxDelayTolerance;     // ms
         int minSubTaskCount;
         int maxSubTaskCount;
+        omnetpp::cGate *serverTaskInGate;
 
     protected:
         virtual void initialize() override;

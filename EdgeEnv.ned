@@ -19,17 +19,21 @@ network EdgeEnv
 {
     parameters:
         @display("bgb=678,418");
-        int rows = 5;
-        int cols = 5;
-        int total = 25;
+        int rows;
+        int cols ;
+        int numUsers;
     submodules:
-        edgeServer[rows * cols]: EdgeServer {
-            id = index + 1;
-        }
+        edgeServer[rows * cols]: EdgeServer;
+        
         finishedTaskCollector: FinishedTaskCollector {
             @display("p=137,150");
         }
-    connections:
+        
+        users[numUsers]: User {
+            @display("p=60,135");
+        }
+
+    connections allowunconnected:
         for row=0..rows-1, for col=0..cols-1 {
             edgeServer[row * cols + col].ports++ <--> {  delay = 5ms; } <--> edgeServer[row * cols + col + 1].ports++ if col + 1 != cols;
 

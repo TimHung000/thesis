@@ -43,10 +43,14 @@ class TaskQueue : public omnetpp::cSimpleModule
 
 
         // signal
+        omnetpp::cMessage *serverInfoSignalMsg;
+        double totalTaskFailed;
+        double totalTaskCompleted;
         omnetpp::simsignal_t memoryLoadingSignal;
         omnetpp::simsignal_t CPULoadingSignal;
-        omnetpp::simsignal_t totalTaskFinishedSignal;
+        omnetpp::simsignal_t totalTaskSignal;
         omnetpp::simsignal_t totalTaskCompletedSignal;
+        omnetpp::simsignal_t totalTaskFailedSignal;
 
     protected:
         virtual void initialize() override;
@@ -56,14 +60,14 @@ class TaskQueue : public omnetpp::cSimpleModule
         void randomDispatchingAlgo(omnetpp::cMessage *msg);
         void greedyDispatchingAlgo(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo(omnetpp::cMessage *msg);
+        void modifiedGreedyDispatchingAlgo(omnetpp::cMessage *msg);
         void FIFOSchedulingAlgo();
         void proposedSchedulingAlgo();
         void scheduling();
     public:
         ~TaskQueue();
         ServerStatus *getServerStatus();
-
-
+        double getRegionLoad(int exceptServerId);
 };
 
 #endif
