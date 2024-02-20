@@ -37,13 +37,7 @@ void User::initialize()
 
 
     taskCounter = 0;
-    minRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue();                   // M
-    maxRequiredCPUCycle = par("maxRequiredCPUCycle").doubleValue();                   // M
-    taskSizeMultiple = par("taskSizeMultiple").doubleValue();
-    minDelayTolerance = par("minDelayTolerance").doubleValue();                       // ms
-    maxDelayTolerance = par("maxDelayTolerance").doubleValue();                       // ms
-    minSubTaskCount = static_cast<int>(par("minSubTaskCount").doubleValue());
-    maxSubTaskCount = static_cast<int>(par("maxSubTaskCount").doubleValue());
+
 
     // schedule the first message timer for start time
     scheduleAt(omnetpp::simTime() + par("interArrivalTime").doubleValue(), new omnetpp::cMessage("newTaskTimer"));
@@ -75,14 +69,24 @@ Task *User::createTask()
     task->setTotalPropagationTime(omnetpp::SimTime::ZERO);
     task->setFinishedTime(omnetpp::SimTime::ZERO);
 
-    int randRequiredCPUCycle = minRequiredCPUCycle + intrand(maxRequiredCPUCycle - minRequiredCPUCycle + 1);
-    double requiredCPUCycle = static_cast<double>(randRequiredCPUCycle) * 1e6;
-    task->setRequiredCycle(requiredCPUCycle);
+//    int randRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue()
+//            + intrand(par("maxRequiredCPUCycle").doubleValue() - par("minRequiredCPUCycle").doubleValue() + 1);
+//    double requiredCPUCycle = static_cast<double>(randRequiredCPUCycle) * 1e6;
+//    task->setRequiredCycle(requiredCPUCycle);
 
-    double taskSize = requiredCPUCycle * taskSizeMultiple;
-    task->setTaskSize(taskSize);
+    double randRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue() +
+            intrand(par("maxRequiredCPUCycle").doubleValue() - par("minRequiredCPUCycle").doubleValue() + 1);
+    task->setRequiredCycle(randRequiredCPUCycle);
 
-    int randDelayTolerance = minDelayTolerance + intrand(maxDelayTolerance - minDelayTolerance + 1);
+//    double taskSize = requiredCPUCycle * par("taskSizeMultiple").doubleValue();;
+//    task->setTaskSize(taskSize);
+
+    double randTaskSize = par("minTaskSize").doubleValue() +
+            intrand(par("maxTaskSize").doubleValue() - par("minTaskSize").doubleValue() + 1);
+    task->setTaskSize(randTaskSize);
+
+    int randDelayTolerance = par("minDelayTolerance").doubleValue()
+            + intrand(par("maxDelayTolerance").doubleValue() - par("minDelayTolerance").doubleValue() + 1);
     double delayTolerance = static_cast<double>(randDelayTolerance) * 1e-3;
     task->setDelayTolerance(delayTolerance);
 
@@ -93,7 +97,8 @@ Task *User::createTask()
     task->setHopCount(0);
     task->setIsCompleted(false);
 
-    int randSubTaskCount = minSubTaskCount + intrand(maxSubTaskCount - minSubTaskCount + 1);
+    int randSubTaskCount = par("minSubTaskCount").intValue()
+            + intrand(par("maxSubTaskCount").intValue() - par("minSubTaskCount").intValue() + 1);
     task->setTotalSubTaskCount(randSubTaskCount);
 
     std::vector<int> weightVec;
@@ -106,14 +111,14 @@ Task *User::createTask()
     }
 
     subTaskVector& subTaskVec = task->getSubTaskVecForUpdate();
-    double remainedTaskSize = taskSize;
-    double remainedRequiredCPUCycle = requiredCPUCycle;
+    double remainedTaskSize = task->getTaskSize();
+    double remainedRequiredCPUCycle = task->getRequiredCycle();
     double curSubTaskSize;
     double curSubTaskRequiredCPUCycle;
     SubTask *subTask;
     for (int i = 0; i < randSubTaskCount-1; ++i) {
-        curSubTaskSize = std::floor(taskSize / totalWeight * weightVec[i]);
-        curSubTaskRequiredCPUCycle = std::floor(requiredCPUCycle / totalWeight * weightVec[i]);
+        curSubTaskSize = std::floor(task->getTaskSize() / totalWeight * weightVec[i]);
+        curSubTaskRequiredCPUCycle = std::floor(task->getRequiredCycle() / totalWeight * weightVec[i]);
         subTask = new SubTask(i, curSubTaskSize, curSubTaskRequiredCPUCycle);
         subTaskVec.push_back(subTask);
         remainedTaskSize -= curSubTaskSize;
@@ -129,6 +134,11 @@ Task *User::createTask()
         totalSubTaskSize += task->getSubTaskVec()[i]->getSubTaskSize();
         totalSubTaskRequiredCPUCycle += task->getSubTaskVec()[i]->getSubTaskRequiredCPUCycle();
     }
+
+    int randTaskReward = par("minTaskReward").intValue()
+            + intrand(par("maxTaskReward").intValue() - par("minTaskReward").intValue() + 1);
+    task->setReward(randTaskReward);
+
     ASSERT(task->getTaskSize() > 0);
     ASSERT(totalSubTaskRequiredCPUCycle > 0);
     ASSERT(totalSubTaskSize == task->getTaskSize());

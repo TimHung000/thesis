@@ -37,6 +37,8 @@ simple TaskQueue
         double maxFrequency;          // GHz
         double minFrequency;          // GHz
         double memoryMultiple;
+        double minMemory;
+        double maxMemory;
         string schedulingAlgo;
     gates:
         input taskIn[];

@@ -31,6 +31,7 @@ packet Task
    	double taskSize;				    // bytes
    	double requiredCycle;
    	double processedCycle;
+   	double reward;
    	int arrivingServer;
    	int runningServer;
    	int destinationServer;

@@ -21,11 +21,16 @@ simple User
         double minRequiredCPUCycle; // M
         double maxRequiredCPUCycle; // M
         double taskSizeMultiple;
+        double minTaskSize;
+        double maxTaskSize;
         double minDelayTolerance; // ms
         double maxDelayTolerance; // ms
-        double minSubTaskCount;
-        double maxSubTaskCount;
+        int minSubTaskCount;
+        int maxSubTaskCount;
+        int minTaskReward;
+        int maxTaskReward;
         string hotSpotServer;
         double hotSpotLoad;
+
 }
 

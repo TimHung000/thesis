@@ -755,6 +755,7 @@ void Task::copy(const Task& other)
     this->taskSize = other.taskSize;
     this->requiredCycle = other.requiredCycle;
     this->processedCycle = other.processedCycle;
+    this->reward = other.reward;
     this->arrivingServer = other.arrivingServer;
     this->runningServer = other.runningServer;
     this->destinationServer = other.destinationServer;
@@ -778,6 +779,7 @@ void Task::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->taskSize);
     doParsimPacking(b,this->requiredCycle);
     doParsimPacking(b,this->processedCycle);
+    doParsimPacking(b,this->reward);
     doParsimPacking(b,this->arrivingServer);
     doParsimPacking(b,this->runningServer);
     doParsimPacking(b,this->destinationServer);
@@ -801,6 +803,7 @@ void Task::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->taskSize);
     doParsimUnpacking(b,this->requiredCycle);
     doParsimUnpacking(b,this->processedCycle);
+    doParsimUnpacking(b,this->reward);
     doParsimUnpacking(b,this->arrivingServer);
     doParsimUnpacking(b,this->runningServer);
     doParsimUnpacking(b,this->destinationServer);
@@ -911,6 +914,16 @@ void Task::setProcessedCycle(double processedCycle)
     this->processedCycle = processedCycle;
 }
 
+double Task::getReward() const
+{
+    return this->reward;
+}
+
+void Task::setReward(double reward)
+{
+    this->reward = reward;
+}
+
 int Task::getArrivingServer() const
 {
     return this->arrivingServer;
@@ -1006,6 +1019,7 @@ class TaskDescriptor : public omnetpp::cClassDescriptor
         FIELD_taskSize,
         FIELD_requiredCycle,
         FIELD_processedCycle,
+        FIELD_reward,
         FIELD_arrivingServer,
         FIELD_runningServer,
         FIELD_destinationServer,
@@ -1080,7 +1094,7 @@ const char *TaskDescriptor::getProperty(const char *propertyName) const
 int TaskDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 18+base->getFieldCount() : 18;
+    return base ? 19+base->getFieldCount() : 19;
 }
 
 unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
@@ -1102,6 +1116,7 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_taskSize
         FD_ISEDITABLE,    // FIELD_requiredCycle
         FD_ISEDITABLE,    // FIELD_processedCycle
+        FD_ISEDITABLE,    // FIELD_reward
         FD_ISEDITABLE,    // FIELD_arrivingServer
         FD_ISEDITABLE,    // FIELD_runningServer
         FD_ISEDITABLE,    // FIELD_destinationServer
@@ -1111,7 +1126,7 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_totalSubTaskCount
         FD_ISCOMPOUND,    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 18) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 19) ? fieldTypeFlags[field] : 0;
 }
 
 const char *TaskDescriptor::getFieldName(int field) const
@@ -1133,6 +1148,7 @@ const char *TaskDescriptor::getFieldName(int field) const
         "taskSize",
         "requiredCycle",
         "processedCycle",
+        "reward",
         "arrivingServer",
         "runningServer",
         "destinationServer",
@@ -1142,7 +1158,7 @@ const char *TaskDescriptor::getFieldName(int field) const
         "totalSubTaskCount",
         "subTaskVec",
     };
-    return (field >= 0 && field < 18) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 19) ? fieldNames[field] : nullptr;
 }
 
 int TaskDescriptor::findField(const char *fieldName) const
@@ -1159,14 +1175,15 @@ int TaskDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "taskSize") == 0) return baseIndex + 7;
     if (strcmp(fieldName, "requiredCycle") == 0) return baseIndex + 8;
     if (strcmp(fieldName, "processedCycle") == 0) return baseIndex + 9;
-    if (strcmp(fieldName, "arrivingServer") == 0) return baseIndex + 10;
-    if (strcmp(fieldName, "runningServer") == 0) return baseIndex + 11;
-    if (strcmp(fieldName, "destinationServer") == 0) return baseIndex + 12;
-    if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 13;
-    if (strcmp(fieldName, "isCompleted") == 0) return baseIndex + 14;
-    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 15;
-    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 16;
-    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 17;
+    if (strcmp(fieldName, "reward") == 0) return baseIndex + 10;
+    if (strcmp(fieldName, "arrivingServer") == 0) return baseIndex + 11;
+    if (strcmp(fieldName, "runningServer") == 0) return baseIndex + 12;
+    if (strcmp(fieldName, "destinationServer") == 0) return baseIndex + 13;
+    if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 14;
+    if (strcmp(fieldName, "isCompleted") == 0) return baseIndex + 15;
+    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 16;
+    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 17;
+    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 18;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -1189,6 +1206,7 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "double",    // FIELD_taskSize
         "double",    // FIELD_requiredCycle
         "double",    // FIELD_processedCycle
+        "double",    // FIELD_reward
         "int",    // FIELD_arrivingServer
         "int",    // FIELD_runningServer
         "int",    // FIELD_destinationServer
@@ -1198,7 +1216,7 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_totalSubTaskCount
         "subTaskVector",    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 18) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 19) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **TaskDescriptor::getFieldPropertyNames(int field) const
@@ -1291,6 +1309,7 @@ std::string TaskDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_taskSize: return double2string(pp->getTaskSize());
         case FIELD_requiredCycle: return double2string(pp->getRequiredCycle());
         case FIELD_processedCycle: return double2string(pp->getProcessedCycle());
+        case FIELD_reward: return double2string(pp->getReward());
         case FIELD_arrivingServer: return long2string(pp->getArrivingServer());
         case FIELD_runningServer: return long2string(pp->getRunningServer());
         case FIELD_destinationServer: return long2string(pp->getDestinationServer());
@@ -1325,6 +1344,7 @@ void TaskDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_taskSize: pp->setTaskSize(string2double(value)); break;
         case FIELD_requiredCycle: pp->setRequiredCycle(string2double(value)); break;
         case FIELD_processedCycle: pp->setProcessedCycle(string2double(value)); break;
+        case FIELD_reward: pp->setReward(string2double(value)); break;
         case FIELD_arrivingServer: pp->setArrivingServer(string2long(value)); break;
         case FIELD_runningServer: pp->setRunningServer(string2long(value)); break;
         case FIELD_destinationServer: pp->setDestinationServer(string2long(value)); break;
@@ -1355,6 +1375,7 @@ omnetpp::cValue TaskDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_taskSize: return pp->getTaskSize();
         case FIELD_requiredCycle: return pp->getRequiredCycle();
         case FIELD_processedCycle: return pp->getProcessedCycle();
+        case FIELD_reward: return pp->getReward();
         case FIELD_arrivingServer: return pp->getArrivingServer();
         case FIELD_runningServer: return pp->getRunningServer();
         case FIELD_destinationServer: return pp->getDestinationServer();
@@ -1389,6 +1410,7 @@ void TaskDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
         case FIELD_taskSize: pp->setTaskSize(value.doubleValue()); break;
         case FIELD_requiredCycle: pp->setRequiredCycle(value.doubleValue()); break;
         case FIELD_processedCycle: pp->setProcessedCycle(value.doubleValue()); break;
+        case FIELD_reward: pp->setReward(value.doubleValue()); break;
         case FIELD_arrivingServer: pp->setArrivingServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_runningServer: pp->setRunningServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
         case FIELD_destinationServer: pp->setDestinationServer(omnetpp::checked_int_cast<int>(value.intValue())); break;

@@ -23,13 +23,6 @@ class User : public omnetpp::cSimpleModule
         std::vector<double> taskSizeVector;
         std::vector<double> taskDeadlineVector;
         std::vector<double> taskCpuCyclesVector;
-        double minRequiredCPUCycle;     // M
-        double maxRequiredCPUCycle;     // M
-        double taskSizeMultiple;
-        double minDelayTolerance;     // ms
-        double maxDelayTolerance;     // ms
-        int minSubTaskCount;
-        int maxSubTaskCount;
         omnetpp::cGate *serverTaskInGate;
 
     protected:

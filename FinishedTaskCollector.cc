@@ -145,5 +145,10 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
 
 void FinishedTaskCollector::finish()
 {
-    // TODO missing scalar statistics
+    std::vector<Task*> curSubTaskVec;
+    for (auto& it: taskMap) {
+        curSubTaskVec = it.second.first;
+        for (auto *task: curSubTaskVec)
+            cancelAndDelete(task);
+    }
 }

@@ -13,7 +13,7 @@ class TaskQueue : public omnetpp::cSimpleModule
     private:
         // server basic info
         int serverId;
-        std::vector<int> neighborSevers;
+        std::vector<int> neighborServers;
 
         // initialize server capacity
         double serverFrequency;
@@ -31,8 +31,7 @@ class TaskQueue : public omnetpp::cSimpleModule
 
         std::list<Task*> FIFOwaitingQueue;
 
-        std::list<Task*> wholeTaskWaitingQueue;       // for non split task
-        std::list<Task*> subTaskWaitingQueue;        // for sub task
+        std::list<Task*> waitingQueue;
 
         // for random algo used
         int maximumHop;
@@ -60,14 +59,19 @@ class TaskQueue : public omnetpp::cSimpleModule
         void randomDispatchingAlgo(omnetpp::cMessage *msg);
         void greedyDispatchingAlgo(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo(omnetpp::cMessage *msg);
-        void modifiedGreedyDispatchingAlgo(omnetpp::cMessage *msg);
+        void proposedDispatchingAlgo2(omnetpp::cMessage *msg) {
         void FIFOSchedulingAlgo();
         void proposedSchedulingAlgo();
+
         void scheduling();
+        Task *createSubTask(Task *task, int subTaskIdx);
+
     public:
         ~TaskQueue();
         ServerStatus *getServerStatus();
+        ServerStatus *getServerStatus(int serverId);
         double getRegionLoad(int exceptServerId);
+        double getAvgLoad(const std::vector<int>& servers);
 };
 
 #endif

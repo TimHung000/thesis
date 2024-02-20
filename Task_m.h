@@ -42,6 +42,7 @@ typedef std::vector<SubTask*> subTaskVector;
  *     double taskSize;				    // bytes
  *     double requiredCycle;
  *     double processedCycle;
+ *     double reward;
  *     int arrivingServer;
  *     int runningServer;
  *     int destinationServer;
@@ -71,6 +72,7 @@ class Task : public ::omnetpp::cPacket
     double taskSize = 0;
     double requiredCycle = 0;
     double processedCycle = 0;
+    double reward = 0;
     int arrivingServer = 0;
     int runningServer = 0;
     int destinationServer = 0;
@@ -124,6 +126,9 @@ class Task : public ::omnetpp::cPacket
 
     virtual double getProcessedCycle() const;
     virtual void setProcessedCycle(double processedCycle);
+
+    virtual double getReward() const;
+    virtual void setReward(double reward);
 
     virtual int getArrivingServer() const;
     virtual void setArrivingServer(int arrivingServer);
