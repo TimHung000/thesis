@@ -31,7 +31,8 @@ void FinishedTaskCollector::initialize()
 //    hopCountSignal = registerSignal("hopCount");
     isCompletedSignal = registerSignal("isCompleted");
 //    totalSubTaskCountSignal = registerSignal("totalSubTaskCount");
-    partialCompleteSignal = registerSignal("partialComplete");
+    splitTaskPartialCompleteSignal = registerSignal("splitTaskPartialComplete");
+    splitTaskCompleteSignal = registerSignal("splitTaskComplete");
     totalTimeSignal = registerSignal("totalTime");
 }
 
@@ -133,7 +134,8 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
 //    emit(hopCountSignal, task->getHopCount());
     emit(isCompletedSignal, isCompleted);
 //    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
-    emit(partialCompleteSignal, (containCompletedTask && containNotCompletedTask));
+    emit(splitTaskPartialCompleteSignal, (containCompletedTask && containNotCompletedTask));
+    emit(splitTaskCompleteSignal, isCompleted);
     if (isCompleted) {
         emit(totalTimeSignal, finishedTime - creationTime);
     }

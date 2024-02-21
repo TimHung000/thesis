@@ -26,7 +26,8 @@ class FinishedTaskCollector : public omnetpp::cSimpleModule
 //    omnetpp::simsignal_t hopCountSignal;
     omnetpp::simsignal_t isCompletedSignal;
 //    omnetpp::simsignal_t totalSubTaskCountSignal;
-    omnetpp::simsignal_t partialCompleteSignal;
+    omnetpp::simsignal_t splitTaskPartialCompleteSignal;
+    omnetpp::simsignal_t splitTaskCompleteSignal;
     omnetpp::simsignal_t totalTimeSignal;
     std::unordered_map<int64_t, std::pair<std::vector<Task*>, int>> taskMap;
 

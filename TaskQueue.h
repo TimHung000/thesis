@@ -59,7 +59,7 @@ class TaskQueue : public omnetpp::cSimpleModule
         void randomDispatchingAlgo(omnetpp::cMessage *msg);
         void greedyDispatchingAlgo(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo(omnetpp::cMessage *msg);
-        void proposedDispatchingAlgo2(omnetpp::cMessage *msg) {
+        void proposedDispatchingAlgo2(omnetpp::cMessage *msg);
         void FIFOSchedulingAlgo();
         void proposedSchedulingAlgo();
 

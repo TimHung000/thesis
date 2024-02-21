@@ -31,7 +31,8 @@ simple FinishedTaskCollector
 //        @signal[hopCount](type="long");
         @signal[isCompleted](type="bool");
 //        @signal[totalSubTaskCount](type="int");
-		@signal[partialComplete](type="bool");
+		@signal[splitTaskPartialComplete](type="bool");
+		@signal[splitTaskComplete](type="bool");
 		@signal[totalTime](type="simtime_t");
 //        @statistic[taskId](title="task id";source="taskId";record=vector);
 //        @statistic[creationTime](title="creation time of arrived jobs";source="creationTime";record=vector);
@@ -48,7 +49,8 @@ simple FinishedTaskCollector
 //        @statistic[hopCount](title="hop count of task";source="hopCount";record=vector);
         @statistic[isCompleted](title="task status";source="isCompleted";record=count,sum,mean);
 //        @statistic[totalSubTaskCount](title="sub task count";source="totalSubTaskCount";record=vector);
-		@statistic[partialComplete](title="partial complete";source="partialComplete";record=count,sum);
+		@statistic[splitTaskPartialComplete](title="splitTaskPartialComplete";source="splitTaskPartialComplete";record=count,sum);
+		@statistic[splitTaskComplete](title="splitTaskComplete";source="splitTaskComplete";record=count,sum);
 		@statistic[totalTime](title="total time";source="totalTime";record=mean);
     gates:
         input in[];
