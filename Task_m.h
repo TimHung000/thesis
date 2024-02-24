@@ -40,7 +40,9 @@ typedef std::vector<SubTask*> subTaskVector;
  *     simtime_t finishedTime;
  *     simtime_t delayTolerance;			// task need to finish before creattionTime + delayTolerance
  *     double taskSize;				    // bytes
+ *     double wholeTaskSize;
  *     double requiredCycle;
+ *     double wholeRequiredCycle;
  *     double processedCycle;
  *     double reward;
  *     int arrivingServer;
@@ -70,7 +72,9 @@ class Task : public ::omnetpp::cPacket
     omnetpp::simtime_t finishedTime = SIMTIME_ZERO;
     omnetpp::simtime_t delayTolerance = SIMTIME_ZERO;
     double taskSize = 0;
+    double wholeTaskSize = 0;
     double requiredCycle = 0;
+    double wholeRequiredCycle = 0;
     double processedCycle = 0;
     double reward = 0;
     int arrivingServer = 0;
@@ -121,8 +125,14 @@ class Task : public ::omnetpp::cPacket
     virtual double getTaskSize() const;
     virtual void setTaskSize(double taskSize);
 
+    virtual double getWholeTaskSize() const;
+    virtual void setWholeTaskSize(double wholeTaskSize);
+
     virtual double getRequiredCycle() const;
     virtual void setRequiredCycle(double requiredCycle);
+
+    virtual double getWholeRequiredCycle() const;
+    virtual void setWholeRequiredCycle(double wholeRequiredCycle);
 
     virtual double getProcessedCycle() const;
     virtual void setProcessedCycle(double processedCycle);

@@ -34,6 +34,7 @@ void FinishedTaskCollector::initialize()
     splitTaskPartialCompleteSignal = registerSignal("splitTaskPartialComplete");
     splitTaskCompleteSignal = registerSignal("splitTaskComplete");
     totalTimeSignal = registerSignal("totalTime");
+    totalRewardSignal = registerSignal("totalReward");
 }
 
 void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
@@ -87,6 +88,7 @@ void FinishedTaskCollector::emitSignal(Task *task) {
 //    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
     if (task->isCompleted()) {
         emit(totalTimeSignal, task->getFinishedTime() - task->getCreationTime());
+        emit(totalRewardSignal, task->getReward());
     }
     cancelAndDelete(task);
 }
@@ -138,6 +140,7 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
     emit(splitTaskCompleteSignal, isCompleted);
     if (isCompleted) {
         emit(totalTimeSignal, finishedTime - creationTime);
+        emit(totalRewardSignal, task->getReward());
     }
     for (int i = 0; i < subTaskVector.size(); ++i) {
         task = subTaskVector[i];

@@ -77,6 +77,7 @@ Task *User::createTask()
     double randRequiredCPUCycle = par("minRequiredCPUCycle").doubleValue() +
             intrand(par("maxRequiredCPUCycle").doubleValue() - par("minRequiredCPUCycle").doubleValue() + 1);
     task->setRequiredCycle(randRequiredCPUCycle);
+    task->setWholeRequiredCycle(randRequiredCPUCycle);
 
 //    double taskSize = requiredCPUCycle * par("taskSizeMultiple").doubleValue();;
 //    task->setTaskSize(taskSize);
@@ -84,6 +85,8 @@ Task *User::createTask()
     double randTaskSize = par("minTaskSize").doubleValue() +
             intrand(par("maxTaskSize").doubleValue() - par("minTaskSize").doubleValue() + 1);
     task->setTaskSize(randTaskSize);
+    task->setWholeTaskSize(randTaskSize);
+
 
     int randDelayTolerance = par("minDelayTolerance").doubleValue()
             + intrand(par("maxDelayTolerance").doubleValue() - par("minDelayTolerance").doubleValue() + 1);

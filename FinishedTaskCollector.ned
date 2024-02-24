@@ -34,6 +34,7 @@ simple FinishedTaskCollector
 		@signal[splitTaskPartialComplete](type="bool");
 		@signal[splitTaskComplete](type="bool");
 		@signal[totalTime](type="simtime_t");
+		@signal[totalReward](type="double");
 //        @statistic[taskId](title="task id";source="taskId";record=vector);
 //        @statistic[creationTime](title="creation time of arrived jobs";source="creationTime";record=vector);
 //        @statistic[totalWaitingTime](title="the total time spent in waiting queue";source="totalWaitingTime";record=vector);
@@ -52,6 +53,7 @@ simple FinishedTaskCollector
 		@statistic[splitTaskPartialComplete](title="splitTaskPartialComplete";source="splitTaskPartialComplete";record=count,sum);
 		@statistic[splitTaskComplete](title="splitTaskComplete";source="splitTaskComplete";record=count,sum);
 		@statistic[totalTime](title="total time";source="totalTime";record=mean);
+		@statistic[totalReward](title="total reward";source="totalReward";record=sum,vector);
     gates:
         input in[];
 }

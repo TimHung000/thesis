@@ -29,7 +29,9 @@ packet Task
     simtime_t finishedTime;
    	simtime_t delayTolerance;			// task need to finish before creattionTime + delayTolerance
    	double taskSize;				    // bytes
+   	double wholeTaskSize;
    	double requiredCycle;
+   	double wholeRequiredCycle;
    	double processedCycle;
    	double reward;
    	int arrivingServer;

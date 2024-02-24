@@ -753,7 +753,9 @@ void Task::copy(const Task& other)
     this->finishedTime = other.finishedTime;
     this->delayTolerance = other.delayTolerance;
     this->taskSize = other.taskSize;
+    this->wholeTaskSize = other.wholeTaskSize;
     this->requiredCycle = other.requiredCycle;
+    this->wholeRequiredCycle = other.wholeRequiredCycle;
     this->processedCycle = other.processedCycle;
     this->reward = other.reward;
     this->arrivingServer = other.arrivingServer;
@@ -777,7 +779,9 @@ void Task::parsimPack(omnetpp::cCommBuffer *b) const
     doParsimPacking(b,this->finishedTime);
     doParsimPacking(b,this->delayTolerance);
     doParsimPacking(b,this->taskSize);
+    doParsimPacking(b,this->wholeTaskSize);
     doParsimPacking(b,this->requiredCycle);
+    doParsimPacking(b,this->wholeRequiredCycle);
     doParsimPacking(b,this->processedCycle);
     doParsimPacking(b,this->reward);
     doParsimPacking(b,this->arrivingServer);
@@ -801,7 +805,9 @@ void Task::parsimUnpack(omnetpp::cCommBuffer *b)
     doParsimUnpacking(b,this->finishedTime);
     doParsimUnpacking(b,this->delayTolerance);
     doParsimUnpacking(b,this->taskSize);
+    doParsimUnpacking(b,this->wholeTaskSize);
     doParsimUnpacking(b,this->requiredCycle);
+    doParsimUnpacking(b,this->wholeRequiredCycle);
     doParsimUnpacking(b,this->processedCycle);
     doParsimUnpacking(b,this->reward);
     doParsimUnpacking(b,this->arrivingServer);
@@ -894,6 +900,16 @@ void Task::setTaskSize(double taskSize)
     this->taskSize = taskSize;
 }
 
+double Task::getWholeTaskSize() const
+{
+    return this->wholeTaskSize;
+}
+
+void Task::setWholeTaskSize(double wholeTaskSize)
+{
+    this->wholeTaskSize = wholeTaskSize;
+}
+
 double Task::getRequiredCycle() const
 {
     return this->requiredCycle;
@@ -902,6 +918,16 @@ double Task::getRequiredCycle() const
 void Task::setRequiredCycle(double requiredCycle)
 {
     this->requiredCycle = requiredCycle;
+}
+
+double Task::getWholeRequiredCycle() const
+{
+    return this->wholeRequiredCycle;
+}
+
+void Task::setWholeRequiredCycle(double wholeRequiredCycle)
+{
+    this->wholeRequiredCycle = wholeRequiredCycle;
 }
 
 double Task::getProcessedCycle() const
@@ -1017,7 +1043,9 @@ class TaskDescriptor : public omnetpp::cClassDescriptor
         FIELD_finishedTime,
         FIELD_delayTolerance,
         FIELD_taskSize,
+        FIELD_wholeTaskSize,
         FIELD_requiredCycle,
+        FIELD_wholeRequiredCycle,
         FIELD_processedCycle,
         FIELD_reward,
         FIELD_arrivingServer,
@@ -1094,7 +1122,7 @@ const char *TaskDescriptor::getProperty(const char *propertyName) const
 int TaskDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *base = getBaseClassDescriptor();
-    return base ? 19+base->getFieldCount() : 19;
+    return base ? 21+base->getFieldCount() : 21;
 }
 
 unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
@@ -1114,7 +1142,9 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_finishedTime
         FD_ISEDITABLE,    // FIELD_delayTolerance
         FD_ISEDITABLE,    // FIELD_taskSize
+        FD_ISEDITABLE,    // FIELD_wholeTaskSize
         FD_ISEDITABLE,    // FIELD_requiredCycle
+        FD_ISEDITABLE,    // FIELD_wholeRequiredCycle
         FD_ISEDITABLE,    // FIELD_processedCycle
         FD_ISEDITABLE,    // FIELD_reward
         FD_ISEDITABLE,    // FIELD_arrivingServer
@@ -1126,7 +1156,7 @@ unsigned int TaskDescriptor::getFieldTypeFlags(int field) const
         FD_ISEDITABLE,    // FIELD_totalSubTaskCount
         FD_ISCOMPOUND,    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 19) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 21) ? fieldTypeFlags[field] : 0;
 }
 
 const char *TaskDescriptor::getFieldName(int field) const
@@ -1146,7 +1176,9 @@ const char *TaskDescriptor::getFieldName(int field) const
         "finishedTime",
         "delayTolerance",
         "taskSize",
+        "wholeTaskSize",
         "requiredCycle",
+        "wholeRequiredCycle",
         "processedCycle",
         "reward",
         "arrivingServer",
@@ -1158,7 +1190,7 @@ const char *TaskDescriptor::getFieldName(int field) const
         "totalSubTaskCount",
         "subTaskVec",
     };
-    return (field >= 0 && field < 19) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 21) ? fieldNames[field] : nullptr;
 }
 
 int TaskDescriptor::findField(const char *fieldName) const
@@ -1173,17 +1205,19 @@ int TaskDescriptor::findField(const char *fieldName) const
     if (strcmp(fieldName, "finishedTime") == 0) return baseIndex + 5;
     if (strcmp(fieldName, "delayTolerance") == 0) return baseIndex + 6;
     if (strcmp(fieldName, "taskSize") == 0) return baseIndex + 7;
-    if (strcmp(fieldName, "requiredCycle") == 0) return baseIndex + 8;
-    if (strcmp(fieldName, "processedCycle") == 0) return baseIndex + 9;
-    if (strcmp(fieldName, "reward") == 0) return baseIndex + 10;
-    if (strcmp(fieldName, "arrivingServer") == 0) return baseIndex + 11;
-    if (strcmp(fieldName, "runningServer") == 0) return baseIndex + 12;
-    if (strcmp(fieldName, "destinationServer") == 0) return baseIndex + 13;
-    if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 14;
-    if (strcmp(fieldName, "isCompleted") == 0) return baseIndex + 15;
-    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 16;
-    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 17;
-    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 18;
+    if (strcmp(fieldName, "wholeTaskSize") == 0) return baseIndex + 8;
+    if (strcmp(fieldName, "requiredCycle") == 0) return baseIndex + 9;
+    if (strcmp(fieldName, "wholeRequiredCycle") == 0) return baseIndex + 10;
+    if (strcmp(fieldName, "processedCycle") == 0) return baseIndex + 11;
+    if (strcmp(fieldName, "reward") == 0) return baseIndex + 12;
+    if (strcmp(fieldName, "arrivingServer") == 0) return baseIndex + 13;
+    if (strcmp(fieldName, "runningServer") == 0) return baseIndex + 14;
+    if (strcmp(fieldName, "destinationServer") == 0) return baseIndex + 15;
+    if (strcmp(fieldName, "hopCount") == 0) return baseIndex + 16;
+    if (strcmp(fieldName, "isCompleted") == 0) return baseIndex + 17;
+    if (strcmp(fieldName, "hopPath") == 0) return baseIndex + 18;
+    if (strcmp(fieldName, "totalSubTaskCount") == 0) return baseIndex + 19;
+    if (strcmp(fieldName, "subTaskVec") == 0) return baseIndex + 20;
     return base ? base->findField(fieldName) : -1;
 }
 
@@ -1204,7 +1238,9 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "omnetpp::simtime_t",    // FIELD_finishedTime
         "omnetpp::simtime_t",    // FIELD_delayTolerance
         "double",    // FIELD_taskSize
+        "double",    // FIELD_wholeTaskSize
         "double",    // FIELD_requiredCycle
+        "double",    // FIELD_wholeRequiredCycle
         "double",    // FIELD_processedCycle
         "double",    // FIELD_reward
         "int",    // FIELD_arrivingServer
@@ -1216,7 +1252,7 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "int",    // FIELD_totalSubTaskCount
         "subTaskVector",    // FIELD_subTaskVec
     };
-    return (field >= 0 && field < 19) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 21) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **TaskDescriptor::getFieldPropertyNames(int field) const
@@ -1307,7 +1343,9 @@ std::string TaskDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_finishedTime: return simtime2string(pp->getFinishedTime());
         case FIELD_delayTolerance: return simtime2string(pp->getDelayTolerance());
         case FIELD_taskSize: return double2string(pp->getTaskSize());
+        case FIELD_wholeTaskSize: return double2string(pp->getWholeTaskSize());
         case FIELD_requiredCycle: return double2string(pp->getRequiredCycle());
+        case FIELD_wholeRequiredCycle: return double2string(pp->getWholeRequiredCycle());
         case FIELD_processedCycle: return double2string(pp->getProcessedCycle());
         case FIELD_reward: return double2string(pp->getReward());
         case FIELD_arrivingServer: return long2string(pp->getArrivingServer());
@@ -1342,7 +1380,9 @@ void TaskDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_finishedTime: pp->setFinishedTime(string2simtime(value)); break;
         case FIELD_delayTolerance: pp->setDelayTolerance(string2simtime(value)); break;
         case FIELD_taskSize: pp->setTaskSize(string2double(value)); break;
+        case FIELD_wholeTaskSize: pp->setWholeTaskSize(string2double(value)); break;
         case FIELD_requiredCycle: pp->setRequiredCycle(string2double(value)); break;
+        case FIELD_wholeRequiredCycle: pp->setWholeRequiredCycle(string2double(value)); break;
         case FIELD_processedCycle: pp->setProcessedCycle(string2double(value)); break;
         case FIELD_reward: pp->setReward(string2double(value)); break;
         case FIELD_arrivingServer: pp->setArrivingServer(string2long(value)); break;
@@ -1373,7 +1413,9 @@ omnetpp::cValue TaskDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_finishedTime: return pp->getFinishedTime().dbl();
         case FIELD_delayTolerance: return pp->getDelayTolerance().dbl();
         case FIELD_taskSize: return pp->getTaskSize();
+        case FIELD_wholeTaskSize: return pp->getWholeTaskSize();
         case FIELD_requiredCycle: return pp->getRequiredCycle();
+        case FIELD_wholeRequiredCycle: return pp->getWholeRequiredCycle();
         case FIELD_processedCycle: return pp->getProcessedCycle();
         case FIELD_reward: return pp->getReward();
         case FIELD_arrivingServer: return pp->getArrivingServer();
@@ -1408,7 +1450,9 @@ void TaskDescriptor::setFieldValue(omnetpp::any_ptr object, int field, int i, co
         case FIELD_finishedTime: pp->setFinishedTime(value.doubleValue()); break;
         case FIELD_delayTolerance: pp->setDelayTolerance(value.doubleValue()); break;
         case FIELD_taskSize: pp->setTaskSize(value.doubleValue()); break;
+        case FIELD_wholeTaskSize: pp->setWholeTaskSize(value.doubleValue()); break;
         case FIELD_requiredCycle: pp->setRequiredCycle(value.doubleValue()); break;
+        case FIELD_wholeRequiredCycle: pp->setWholeRequiredCycle(value.doubleValue()); break;
         case FIELD_processedCycle: pp->setProcessedCycle(value.doubleValue()); break;
         case FIELD_reward: pp->setReward(value.doubleValue()); break;
         case FIELD_arrivingServer: pp->setArrivingServer(omnetpp::checked_int_cast<int>(value.intValue())); break;
