@@ -66,7 +66,6 @@ class TaskQueue : public omnetpp::cSimpleModule
         void proposedSchedulingAlgo();
 
         void insertTaskIntoWaitingQueue(Task *task);
-        std::vector<Task*> replacedTaskWithPriority(Task *task);
 
         void scheduling();
         Task *createSubTask(Task *task, int subTaskIdx);
