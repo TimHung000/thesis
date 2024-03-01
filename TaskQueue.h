@@ -29,8 +29,6 @@ class TaskQueue : public omnetpp::cSimpleModule
 
         std::list<Task*> garbageQueue;
 
-        std::list<Task*> FIFOwaitingQueue;
-
         std::list<Task*> waitingQueue;
 
         // for random algo used
@@ -58,14 +56,11 @@ class TaskQueue : public omnetpp::cSimpleModule
         virtual void finish() override;
         void randomDispatchingAlgo(omnetpp::cMessage *msg);
         void greedyDispatchingAlgo(omnetpp::cMessage *msg);
-        void greedyDispatchingAlgo2(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo2(omnetpp::cMessage *msg);
 
-        void FIFOSchedulingAlgo();
-        void proposedSchedulingAlgo();
-
         void insertTaskIntoWaitingQueue(Task *task);
+        std::vector<Task*> replaceTaskWithSubTask(Task *task);
 
         void scheduling();
         Task *createSubTask(Task *task, int subTaskIdx);

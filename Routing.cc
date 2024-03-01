@@ -77,28 +77,25 @@ void Routing::initialize()
 void Routing::handleMessage(omnetpp::cMessage *msg)
 {
     Task *task = omnetpp::check_and_cast<Task *>(msg);
+
+    intVector& hopPathForUpdate = task->getHopPathForUpdate();
+    if (hopPathForUpdate.size() == 0 || hopPathForUpdate[hopPathForUpdate.size()-1] != serverId) {
+        task->setHopCount(task->getHopCount()+1);
+        hopPathForUpdate.push_back(serverId);
+    }
+
     int destinationServerId = task->getDestinationServer();
-//    EV << "destination "<< destinationServerId << omnetpp::endl;
     if (destinationServerId == serverId) {
-//        EV << "send task to local dispatcher " << task->getName() << omnetpp::endl;
         send(task, "localOut");
         return;
     }
 
     RoutingTable::iterator it = rtable.find(destinationServerId);
     if (it == rtable.end()) {
-//        EV << "serverId:  " << destinationServerId << " unreachable, discarding packet " << task->getName() << omnetpp::endl;
         cancelAndDelete(task);
         return;
     }
-
     int outGateIndex = (*it).second;
-//    EV << "forwarding task " << task->getName() << " on gate index " << outGateIndex << omnetpp::endl;
-//    EV << gate("out", outGateIndex)->getNextGate()->getNextGate() << omnetpp::endl;
-//    EV << "outgate connect to server " << gate("out", outGateIndex)->getNextGate()->getNextGate()->getOwnerModule()->getIndex() << omnetpp::endl;
-    task->setHopCount(task->getHopCount()+1);
-    intVector& hopPathForUpdate = task->getHopPathForUpdate();
-    hopPathForUpdate.push_back(serverId);
     send(task, "out", outGateIndex);
 }
 
