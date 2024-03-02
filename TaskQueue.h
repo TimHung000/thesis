@@ -54,10 +54,11 @@ class TaskQueue : public omnetpp::cSimpleModule
         virtual void handleMessage(omnetpp::cMessage *msg) override;
         virtual void refreshDisplay() const override;
         virtual void finish() override;
+        void localDispatchingAlgo(omnetpp::cMessage *msg);
         void randomDispatchingAlgo(omnetpp::cMessage *msg);
-        void random2DispatchingAlgo(omnetpp::cMessage *msg);
+        void randomDispatchingAlgo2(omnetpp::cMessage *msg);
         void greedyDispatchingAlgo(omnetpp::cMessage *msg);
-        void greedy2DispatchingAlgo(omnetpp::cMessage *msg);
+        void greedyDispatchingAlgo2(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo2(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo3(omnetpp::cMessage *msg);
