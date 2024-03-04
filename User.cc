@@ -59,7 +59,7 @@ void User::handleMessage(omnetpp::cMessage *msg)
 Task *User::createTask()
 {
     char buf[80];
-    sprintf(buf, "task%d-server%d-user%d", ++taskCounter, 0, userId);
+    sprintf(buf, "task%d-server%d-user%d", ++taskCounter, serverId, userId);
     Task *task = new Task(buf);
 
     task->setTaskId(task->getId());

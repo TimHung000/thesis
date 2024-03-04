@@ -21,16 +21,7 @@ Define_Module(TaskQueue);
 
 TaskQueue::~TaskQueue()
 {
-    for (std::list<Task*>::iterator it = waitingQueue.begin(); it != waitingQueue.end(); ++it)
-        cancelAndDelete(*it);
 
-    for (std::list<Task*>::iterator it = garbageQueue.begin(); it != garbageQueue.end(); ++it)
-        cancelAndDelete(*it);
-
-    if (runningTask)
-        cancelAndDelete(runningTask);
-
-    cancelAndDelete(serverInfoSignalMsg);
 }
 
 void TaskQueue::initialize()
@@ -142,8 +133,6 @@ void TaskQueue::handleMessage(omnetpp::cMessage *msg)
         proposedDispatchingAlgo(msg);
     } else if (dispatchingAlgo == "Proposed2") {
         proposedDispatchingAlgo2(msg);
-    } else if (dispatchingAlgo == "Proposed3") {
-        proposedDispatchingAlgo3(msg);
     }
 
     scheduling();
@@ -316,165 +305,13 @@ void TaskQueue::proposedDispatchingAlgo(omnetpp::cMessage *msg) {
     }
 
     omnetpp::simtime_t incomingTaskDeadline = incomingTask->getCreationTime() + incomingTask->getDelayTolerance();
+    if (incomingTask->getSubTaskVec().size() == 1) { // task cannot split
 
-    if (incomingTask->getSubTaskVec().size() != incomingTask->getTotalSubTaskCount()) {
-        if (totalMemoryConsumed + incomingTask->getTaskSize() <= serverMemory) {
-            insertTaskIntoWaitingQueue(incomingTask);
-        } else {
-            std::vector<Task*> offloadTasks = replaceTaskWithSubTask(incomingTask);
+        std::vector<Task*> tasksToOffload = preemptive(incomingTask);
+        for (Task *task: tasksToOffload)
+            offloadTask(task);
 
-            std::vector<ServerStatus*> neighborServerStatusVec;
-            for (int i = 0; i < neighborServers.size(); ++i)
-                neighborServerStatusVec.push_back(getServerStatus(neighborServers[i]));
-            std::sort(neighborServerStatusVec.begin(), neighborServerStatusVec.end(), [](ServerStatus *lhs, ServerStatus *rhs) {
-                return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
-            });
-
-            for (Task* task: offloadTasks) {
-                int i = 0;
-                while (task->getHopPath().size() >= 2 &&
-                        neighborServerStatusVec[i]->getServerId() == task->getHopPath()[task->getHopPath().size()-2])
-                    ++i;
-
-                task->setDestinationServer(neighborServerStatusVec[i]->getServerId());
-
-                send(task, "offloadOut");
-            }
-        }
-    } else {
-        ServerStatus *thisServerStatus = getServerStatus();
-        std::vector<ServerStatus*> neighborServerStatusVec;
-        for (int i = 0; i < neighborServers.size(); ++i)
-            neighborServerStatusVec.push_back(getServerStatus(neighborServers[i]));
-
-        double totalNeighborFrequency = 0.0;
-        double totalNeighborRemainedSpace = 0.0;
-        double totalNeighborRequiredCPUCycle = 0.0;
-        double totalNeighborFinishedTime = 0.0;
-        for (int i = 0; i < neighborServerStatusVec.size(); ++i) {
-            totalNeighborFrequency += neighborServerStatusVec[i]->getServerFrequency();
-            totalNeighborRemainedSpace += neighborServerStatusVec[i]->getServerMemory() - neighborServerStatusVec[i]->getTotalMemoryConsumed();
-            totalNeighborRequiredCPUCycle += neighborServerStatusVec[i]->getTotalRequiredCycle();
-            totalNeighborFinishedTime += neighborServerStatusVec[i]->getTotalRequiredCycle() / neighborServerStatusVec[i]->getServerFrequency();
-        }
-
-        const double predictedTimeInTransmit = getSystemModule()->par("linkDelay").doubleValue();
-        double avgServerRequiredCPUCycle = (totalNeighborRequiredCPUCycle + thisServerStatus->getTotalRequiredCycle()) / (neighborServers.size() + 1);
-        double avgServerFrequency = (totalNeighborFrequency + thisServerStatus->getServerFrequency()) / (neighborServers.size() + 1);
-        double avgServerRemainedSpace = (totalNeighborRemainedSpace + (thisServerStatus->getServerMemory() - thisServerStatus->getTotalMemoryConsumed())) / (neighborServers.size() + 1);
-
-        double avgSubTaskRequiredCPUCycle = (incomingTask->getSubTaskVec().size() < neighborServers.size() + 1) ? incomingTask->getRequiredCycle() / incomingTask->getSubTaskVec().size()
-                : incomingTask->getRequiredCycle() / (neighborServers.size() + 1);
-        double avgSubTaskSize = (incomingTask->getSubTaskVec().size() < neighborServers.size() + 1) ? incomingTask->getTaskSize() / incomingTask->getSubTaskVec().size() :
-                incomingTask->getTaskSize() / (neighborServers.size() + 1);
-
-        const double MultipleForEnsuringTaskCanPlace = 1;
-        bool canPlaceAllSubTask = avgSubTaskSize * MultipleForEnsuringTaskCanPlace <= avgServerRemainedSpace;
-        bool canFinishAllSubTask = omnetpp::simTime() + predictedTimeInTransmit + (avgServerRequiredCPUCycle + avgSubTaskRequiredCPUCycle) / avgServerFrequency <= incomingTaskDeadline;
-        bool isIncomingTaskSplittable = incomingTask->getSubTaskVec().size() > 1;
-
-        if (isIncomingTaskSplittable && canPlaceAllSubTask && canFinishAllSubTask) {
-
-            std::vector<ServerStatus*> serverStatusVec(neighborServerStatusVec);
-            serverStatusVec.push_back(thisServerStatus);
-            std::sort(serverStatusVec.begin(), serverStatusVec.end(), [](ServerStatus *lhs,ServerStatus *rhs) {
-                return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
-            });
-
-            std::vector<Task*> taskToOffload;
-            const subTaskVector& subTaskVec = incomingTask->getSubTaskVec();
-            for (int i = 0; i < subTaskVec.size(); ++i)
-                taskToOffload.push_back(createSubTask(incomingTask, i));
-            cancelAndDelete(incomingTask);
-
-            std::sort(taskToOffload.begin(), taskToOffload.end(), [](const Task *lhs, const Task *rhs) {
-                return lhs->getRequiredCycle() > rhs->getRequiredCycle();
-            });
-
-
-            int curServerStatusIdx = 0;
-            for (Task *task: taskToOffload) {
-                if (serverStatusVec[curServerStatusIdx]->getServerId() == serverId && totalMemoryConsumed + task->getTaskSize() > serverMemory)
-                    curServerStatusIdx = (curServerStatusIdx + 1) % serverStatusVec.size();
-
-                if (serverStatusVec[curServerStatusIdx]->getServerId() == serverId) {
-                    insertTaskIntoWaitingQueue(task);
-                } else {
-                    task->setDestinationServer(serverStatusVec[curServerStatusIdx]->getServerId());
-                    send(task, "offloadOut");
-                }
-                curServerStatusIdx = (curServerStatusIdx + 1) % serverStatusVec.size();
-            }
-        } else {
-            std::sort(neighborServerStatusVec.begin(), neighborServerStatusVec.end(), [](ServerStatus *lhs, ServerStatus *rhs) {
-                return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
-            });
-
-
-            bool canThisServerFinishTask = omnetpp::simTime() + (thisServerStatus->getTotalRequiredCycle() + incomingTask->getRequiredCycle()) / thisServerStatus->getServerFrequency()
-                    <= incomingTaskDeadline;
-            bool canThisServerPlaceTask = thisServerStatus->getTotalMemoryConsumed() + incomingTask->getTaskSize() <= serverMemory;
-            bool canBestNeighborFinishTask = omnetpp::simTime() + (neighborServerStatusVec[0]->getTotalRequiredCycle() + incomingTask->getRequiredCycle()) / neighborServerStatusVec[0]->getServerFrequency()
-                    <= incomingTaskDeadline;
-            bool thisServerFinishedTimeLessThanNeighborServerFinishedTime = thisServerStatus->getTotalRequiredCycle() / thisServerStatus->getServerFrequency() <=
-                    totalNeighborRequiredCPUCycle / totalNeighborFrequency + predictedTimeInTransmit;
-
-            if (canThisServerFinishTask && canThisServerPlaceTask && thisServerFinishedTimeLessThanNeighborServerFinishedTime) {
-                insertTaskIntoWaitingQueue(incomingTask);
-            } else if (canThisServerFinishTask && canThisServerPlaceTask &&
-                    !thisServerFinishedTimeLessThanNeighborServerFinishedTime && !canBestNeighborFinishTask) {
-                insertTaskIntoWaitingQueue(incomingTask);
-            } else {
-                int i = 0;
-                while (incomingTask->getHopPath().size() >= 2 &&
-                        neighborServerStatusVec[i]->getServerId() == incomingTask->getHopPath()[incomingTask->getHopPath().size()-2])
-                    ++i;
-
-                incomingTask->setDestinationServer(neighborServerStatusVec[i]->getServerId());
-
-                send(incomingTask, "offloadOut");
-            }
-        }
-    }
-}
-
-void TaskQueue::proposedDispatchingAlgo2(omnetpp::cMessage *msg) {
-    Task *incomingTask = omnetpp::check_and_cast<Task*>(msg);
-
-    // task exceed deadline
-    if (omnetpp::simTime() > incomingTask->getCreationTime() + incomingTask->getDelayTolerance()) {
-        send(incomingTask, "taskFinishedOut");
-        totalTaskFailed += 1;
-        return;
-    }
-
-    omnetpp::simtime_t incomingTaskDeadline = incomingTask->getCreationTime() + incomingTask->getDelayTolerance();
-
-    if (incomingTask->getSubTaskVec().size() != incomingTask->getTotalSubTaskCount()) {
-        if (totalMemoryConsumed + incomingTask->getTaskSize() <= serverMemory) {
-            insertTaskIntoWaitingQueue(incomingTask);
-        } else {
-            std::vector<Task*> offloadTasks = replaceTaskWithSubTask(incomingTask);
-
-            std::vector<ServerStatus*> neighborServerStatusVec;
-            for (int i = 0; i < neighborServers.size(); ++i)
-                neighborServerStatusVec.push_back(getServerStatus(neighborServers[i]));
-            std::sort(neighborServerStatusVec.begin(), neighborServerStatusVec.end(), [](ServerStatus *lhs, ServerStatus *rhs) {
-                return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
-            });
-
-            for (Task* task: offloadTasks) {
-                int i = 0;
-                while (task->getHopPath().size() >= 2 &&
-                        neighborServerStatusVec[i]->getServerId() == task->getHopPath()[task->getHopPath().size()-2])
-                    ++i;
-
-                task->setDestinationServer(neighborServerStatusVec[i]->getServerId());
-
-                send(task, "offloadOut");
-            }
-        }
-    } else {
+    } else {  // task that can split
         subTaskVector& subTaskVec = incomingTask->getSubTaskVecForUpdate();
 
         std::vector<ServerStatus*> serverStatusVec;
@@ -486,43 +323,35 @@ void TaskQueue::proposedDispatchingAlgo2(omnetpp::cMessage *msg) {
             return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
         });
 
-        bool incomingTaskCanBeSplit = incomingTask->getSubTaskVec().size() > 1 && subTaskVec.size() <= neighborServers.size() + 1;
-        bool canSubTaskBeHandle = false;
+        std::sort(subTaskVec.begin(), subTaskVec.end(), [](SubTask *lhs, SubTask *rhs) {
+            return lhs->getSubTaskRequiredCPUCycle() > rhs->getSubTaskRequiredCPUCycle();
+        });
 
-        if (incomingTaskCanBeSplit) {
-            std::sort(subTaskVec.begin(), subTaskVec.end(), [](SubTask *lhs, SubTask *rhs) {
-                return lhs->getSubTaskRequiredCPUCycle() > rhs->getSubTaskRequiredCPUCycle();
-            });
-            const double predictedTimeInTransmit = getSystemModule()->par("linkDelay").doubleValue();
+        const double predictedTimeInTransmit = getSystemModule()->par("linkDelay").doubleValue();
 
-            SubTask *curSubTask;
-            int serverIdx = 0;
-            int subTaskIdx = 0;
-            while (subTaskIdx < subTaskVec.size()) {
-                curSubTask = subTaskVec[subTaskIdx];
-                omnetpp::simtime_t predictedFinishedTime = (serverStatusVec[serverIdx]->getTotalRequiredCycle() + curSubTask->getSubTaskRequiredCPUCycle())
-                        / serverStatusVec[serverIdx]->getServerFrequency() + omnetpp::simTime();
-                predictedFinishedTime += (serverStatusVec[serverIdx]->getServerId() == serverId) ? 0 : predictedTimeInTransmit;
-                if (predictedFinishedTime > incomingTaskDeadline)
-                    break;
+        SubTask *curSubTask;
+        int serverIdx = 0;
+        int subTaskIdx = 0;
+        while (subTaskIdx < subTaskVec.size() && serverIdx < serverStatusVec.size()) {
+            curSubTask = subTaskVec[subTaskIdx];
+            omnetpp::simtime_t predictedFinishedTime = (serverStatusVec[serverIdx]->getTotalRequiredCycle() + curSubTask->getSubTaskRequiredCPUCycle())
+                    / serverStatusVec[serverIdx]->getServerFrequency() + omnetpp::simTime();
+            predictedFinishedTime += (serverStatusVec[serverIdx]->getServerId() == serverId) ? 0 : predictedTimeInTransmit;
+            if (predictedFinishedTime > incomingTaskDeadline)
+                break;
 
-                ++subTaskIdx;
-                ++serverIdx;
-            }
-
-            if (subTaskIdx == subTaskVec.size())
-                canSubTaskBeHandle = true;
+            ++subTaskIdx;
+            ++serverIdx;
         }
+        bool isSplittingTask = subTaskIdx == subTaskVec.size();
 
-
-        if (incomingTaskCanBeSplit && canSubTaskBeHandle) {
-
+        if (isSplittingTask) {
             std::vector<Task*> taskToOffload;
             for (int i = 0; i < subTaskVec.size(); ++i)
                 taskToOffload.push_back(createSubTask(incomingTask, i));
             cancelAndDelete(incomingTask);
 
-            int serverIdx = 0;
+            serverIdx = 0;
             for (Task *task: taskToOffload) {
                 if (serverStatusVec[serverIdx]->getServerId() == serverId) {
                     insertTaskIntoWaitingQueue(task);
@@ -533,119 +362,142 @@ void TaskQueue::proposedDispatchingAlgo2(omnetpp::cMessage *msg) {
                 ++serverIdx;
             }
         } else {
-            ServerStatus *thisServerStatus = getServerStatus();
-            std::vector<ServerStatus*> neighborServerStatusVec;
-            double totalNeighborRequiredCPUCycle = 0.0;
-            double totalNeighborFrequency = 0.0;
-            ServerStatus *curNeighborServerStatus;
-            for (int i = 0; i < neighborServers.size(); ++i) {
-                curNeighborServerStatus = getServerStatus(neighborServers[i]);
-                neighborServerStatusVec.push_back(curNeighborServerStatus);
-                totalNeighborRequiredCPUCycle += curNeighborServerStatus->getTotalRequiredCycle();
-                totalNeighborFrequency += curNeighborServerStatus->getServerFrequency();
-            }
+            offloadTask(incomingTask);
+        } // end if we are going to split the task
+    } // end if task can of can not split
+}
 
-            std::sort(neighborServerStatusVec.begin(), neighborServerStatusVec.end(), [](ServerStatus *lhs, ServerStatus *rhs) {
-                return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
-            });
+void TaskQueue::proposedDispatchingAlgo2(omnetpp::cMessage *msg) {
 
-            const double predictedTimeInTransmit = getSystemModule()->par("linkDelay").doubleValue();
-            bool canThisServerFinishTask = omnetpp::simTime() + (thisServerStatus->getTotalRequiredCycle() + incomingTask->getRequiredCycle()) / thisServerStatus->getServerFrequency()
-                    <= incomingTaskDeadline;
-            bool canThisServerPlaceTask = thisServerStatus->getTotalMemoryConsumed() + incomingTask->getTaskSize() <= serverMemory;
-            bool canBestNeighborFinishTask = omnetpp::simTime() + (neighborServerStatusVec[0]->getTotalRequiredCycle() + incomingTask->getRequiredCycle()) / neighborServerStatusVec[0]->getServerFrequency()
-                    <= incomingTaskDeadline;
-            bool thisServerFinishedTimeLessThanNeighborServerFinishedTime = thisServerStatus->getTotalRequiredCycle() / thisServerStatus->getServerFrequency() <=
-                    totalNeighborRequiredCPUCycle / totalNeighborFrequency + predictedTimeInTransmit;
+}
+
+void TaskQueue::offloadTask(Task *task) {
+    std::vector<ServerStatus*> neighborServerStatusVec;
+
+    for (int i = 0; i < neighborServers.size(); ++i)
+        neighborServerStatusVec.push_back(getServerStatus(neighborServers[i]));
+
+    std::sort(neighborServerStatusVec.begin(), neighborServerStatusVec.end(), [](ServerStatus *lhs, ServerStatus *rhs) {
+        return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
+    });
+
+    int i = 0;
+    while (task->getHopPath().size() >= 2 &&
+            neighborServerStatusVec[i]->getServerId() == task->getHopPath()[task->getHopPath().size()-2])
+        ++i;
+
+    task->setDestinationServer(neighborServerStatusVec[i]->getServerId());
+    send(task, "offloadOut");
+
+}
+
+std::vector<Task*> TaskQueue::preemptive(Task *task) {
+
+    omnetpp::simtime_t taskDeadline = task->getCreationTime() + task->getDelayTolerance();
 
 
-            if (canThisServerFinishTask && canThisServerPlaceTask &&
-                    (thisServerFinishedTimeLessThanNeighborServerFinishedTime ||
-                            (!thisServerFinishedTimeLessThanNeighborServerFinishedTime && !canBestNeighborFinishTask))) {
-                insertTaskIntoWaitingQueue(incomingTask);
-            } else {
-                int i = 0;
-                while (incomingTask->getHopPath().size() >= 2 &&
-                        neighborServerStatusVec[i]->getServerId() == incomingTask->getHopPath()[incomingTask->getHopPath().size()-2])
-                    ++i;
-
-                incomingTask->setDestinationServer(neighborServerStatusVec[i]->getServerId());
-
-                send(incomingTask, "offloadOut");
-            }
-        }
+    // calculate max spare time of waiting queue and incoming task
+    double maxSpareTime = taskDeadline.dbl() - task->getRequiredCycle() / serverFrequency - omnetpp::simTime().dbl();
+    double curSpareTime;
+    for (std::list<Task*>::iterator it = waitingQueue.begin(); it != waitingQueue.end(); ++it) {
+        curSpareTime = ((*it)->getCreationTime() + (*it)->getDelayTolerance() - (*it)->getRequiredCycle() / serverFrequency - omnetpp::simTime()).dbl();
+        if (curSpareTime > maxSpareTime)
+            maxSpareTime = curSpareTime;
     }
-}
 
-void TaskQueue::proposedDispatchingAlgo3(omnetpp::cMessage *msg) {
+    // priority queue for all score higher than incoming task, and it's place in waiting queue is before incoming task
+    auto compare = [=](std::list<Task*>::iterator lhs, std::list<Task*>::iterator rhs) {
+        double lhsSpareTime = ((*lhs)->getCreationTime() + (*lhs)->getDelayTolerance() - (*lhs)->getRequiredCycle() / serverFrequency - omnetpp::simTime()).dbl();
+        double lhsWholeTask = static_cast<double>((*lhs)->getSubTaskVec().size() == (*lhs)->getTotalSubTaskCount());
+        double lhsScore = getScore(lhsSpareTime, maxSpareTime, lhsWholeTask);
+        double rhsSpareTime = ((*rhs)->getCreationTime() + (*rhs)->getDelayTolerance() - (*rhs)->getRequiredCycle() / serverFrequency - omnetpp::simTime()).dbl();
+        double rhsWholeTask = static_cast<double>((*rhs)->getSubTaskVec().size() == (*rhs)->getTotalSubTaskCount());
+        double rhsScore = getScore(rhsSpareTime, maxSpareTime, rhsWholeTask);
+        return lhsScore < rhsScore;
+    };
+    std::priority_queue<std::list<Task*>::iterator, std::vector<std::list<Task*>::iterator>, decltype(compare)> maxHeap(compare);
 
-}
 
-std::vector<Task*> TaskQueue::replaceTaskWithSubTask(Task *task) {
-    std::vector<std::list<Task*>::iterator> tmp;
-    std::vector<Task*> res;
+    // build the priority queue, and find the place that incoming task should be inserted
+    double accuRequiredCycle = (runningTask != nullptr) ? runningTask->getRequiredCycle() - getCurrentRunningTaskFinishedCycle() : 0.0;
+    double canReleaseCycle = 0.0;
+    double taskSpareTime = taskDeadline.dbl() - task->getRequiredCycle() / serverFrequency - omnetpp::simTime().dbl();
+    double taskWholeTask = static_cast<double>(task->getSubTaskVec().size() == task->getTotalSubTaskCount());
+    double taskScore = getScore(taskSpareTime, maxSpareTime, taskWholeTask);
+    double curWholeTask, curScore;
+    omnetpp::simtime_t curDeadline;
+    std::list<Task*>::iterator it = waitingQueue.begin();
+    while (it != waitingQueue.end()) {
+        curSpareTime = ((*it)->getCreationTime() + (*it)->getDelayTolerance() - (*it)->getRequiredCycle() / serverFrequency - omnetpp::simTime()).dbl();
+        curWholeTask = static_cast<double>((*it)->getSubTaskVec().size() == (*it)->getTotalSubTaskCount());
+        curScore = getScore(curSpareTime, maxSpareTime, curWholeTask);
 
-    double accuMemory = 0.0;
-    double accuCycle = 0.0;
-
-    std::list<Task*>::reverse_iterator rit = waitingQueue.rbegin();
-    while(rit != waitingQueue.rend()) {
-        if ((*rit)->getSubTaskVec().size() == (*rit)->getTotalSubTaskCount()) {
-            tmp.push_back(std::next(rit).base());
-            accuMemory += (*rit)->getTaskSize();
-            accuCycle += (*rit)->getRequiredCycle();
-            if (serverMemory - (totalMemoryConsumed - accuMemory) >= task->getTaskSize())
+        if (schedulingAlgo == "EDF") {
+            if (curDeadline > taskDeadline)
+                break;
+        } else {
+            if (curSpareTime > taskSpareTime)
                 break;
         }
-        ++rit;
+
+        if (curScore > taskScore) {
+            maxHeap.push(it);
+            canReleaseCycle += (*it)->getRequiredCycle();
+        }
+        accuRequiredCycle += (*it)->getRequiredCycle();
+        ++it;
     }
 
-    if (serverMemory - (totalMemoryConsumed - accuMemory) < task->getTaskSize()) {
-        std::list<Task*>::reverse_iterator rit = waitingQueue.rbegin();
-        omnetpp::simtime_t taskLastestStartTime = task->getCreationTime() + task->getDelayTolerance() - task->getRequiredCycle() / serverFrequency;
-        while(rit != waitingQueue.rend()) {
-            omnetpp::simtime_t curlatestStartTime = (*rit)->getCreationTime() + (*rit)->getDelayTolerance() - (*rit)->getRequiredCycle() / serverFrequency;
-            if ((*rit)->getSubTaskVec().size() != (*rit)->getTotalSubTaskCount() &&
-                    taskLastestStartTime > curlatestStartTime) {
-                tmp.push_back(std::next(rit).base());
-                accuMemory += (*rit)->getTaskSize();
-                accuCycle += (*rit)->getRequiredCycle();
-                if (serverMemory - (totalMemoryConsumed - accuMemory) >= task->getTaskSize())
-                    break;
-            }
-            ++rit;
+
+    // if incoming task can be placed in the waitingQueue,
+    // put all the task need to move out to the taskItrToOffload
+    std::vector<std::list<Task*>::iterator> taskItrToOffload;
+    std::vector<Task*> taskToOffload;
+    if (omnetpp::simTime() + (accuRequiredCycle - canReleaseCycle + task->getRequiredCycle()) / serverFrequency > taskDeadline)
+        taskToOffload.push_back(task);
+    else {
+        std::list<Task*>::iterator tmpIt;
+        while (!maxHeap.empty() &&
+                omnetpp::simTime() + (accuRequiredCycle + task->getRequiredCycle()) / serverFrequency > taskDeadline) {
+            tmpIt = maxHeap.top();
+            maxHeap.pop();
+            accuRequiredCycle -= (*tmpIt)->getRequiredCycle();
+            taskItrToOffload.push_back(tmpIt);
         }
 
-    }
+        waitingQueue.insert(it, task);
+        accuRequiredCycle += task->getRequiredCycle();
+        totalRequiredCycle += task->getRequiredCycle();
+        totalMemoryConsumed += task->getTaskSize();
 
-//    omnetpp::simtime_t taskLastestStartTime = task->getCreationTime() + task->getDelayTolerance() - task->getRequiredCycle() / serverFrequency;
-//    std::list<Task*>::reverse_iterator rit = waitingQueue.rbegin();
-//    while(rit != waitingQueue.rend()) {
-//        omnetpp::simtime_t curlatestStartTime = (*rit)->getCreationTime() + (*rit)->getDelayTolerance() - (*rit)->getRequiredCycle() / serverFrequency;
-//        if (taskLastestStartTime > curlatestStartTime) {
-//            tmp.push_back(std::next(rit).base());
-//            accuMemory += (*rit)->getTaskSize();
-//            accuCycle += (*rit)->getRequiredCycle();
-//            if (serverMemory - (totalMemoryConsumed - accuMemory) >= task->getTaskSize())
-//                break;
-//        }
-//        ++rit;
-//    }
-
-
-    if (serverMemory - (totalMemoryConsumed - accuMemory) >= task->getTaskSize()) {
-        for (auto it: tmp) {
-            res.push_back(*it);
-            waitingQueue.erase(it);
+        // when the incoming task be inserted into this server, it will impact all the task after it.
+        // move all task wouldn't finished in time to taskItrToOffload
+        while (it != waitingQueue.end()) {
+            if (omnetpp::simTime() + (accuRequiredCycle + (*it)->getRequiredCycle()) / serverFrequency > (*it)->getCreationTime() + (*it)->getDelayTolerance())
+                taskItrToOffload.push_back(it);
+            else
+                accuRequiredCycle += (*it)->getRequiredCycle();
+            ++it;
         }
-        totalMemoryConsumed -= accuMemory;
-        totalRequiredCycle -= accuCycle;
-        insertTaskIntoWaitingQueue(task);
-    } else {
-        res.push_back(task);
-    }
-    return res;
+
+        Task *curTask;
+        for (int i = 0; i < taskItrToOffload.size(); ++i) {
+            curTask = *taskItrToOffload[i];
+            waitingQueue.erase(taskItrToOffload[i]);
+            taskToOffload.push_back(curTask);
+            totalRequiredCycle -= curTask->getRequiredCycle();
+            totalMemoryConsumed -= curTask->getTaskSize();
+        }
+    } // end if incoming task can be inserted into waiting Queue
+
+    return taskToOffload;
 }
+
+double TaskQueue::getScore(double spareTime, double maxSpareTime, double wholeTask) {
+    return 1 * spareTime / maxSpareTime + wholeTask;
+}
+
+
 
 void TaskQueue::scheduling() {
     if (runningTask)
@@ -717,12 +569,12 @@ void TaskQueue::insertTaskIntoWaitingQueue(Task *task) {
         waitingQueue.insert(rit.base(), task);
         totalRequiredCycle += task->getRequiredCycle();
         totalMemoryConsumed += task->getTaskSize();
-    } else if (schedulingAlgo == "EDMPF") {   // Earliest Deadline Minus Processing time First
+    } else if (schedulingAlgo == "SST") {   // SST (Shortest Spare Time) : deadline - processing - currentTime
         std::list<Task*>::reverse_iterator rit = waitingQueue.rbegin();
-        omnetpp::simtime_t taskMaxWaitTime = task->getCreationTime() + task->getDelayTolerance()
+        omnetpp::simtime_t taskSpareTime = task->getCreationTime() + task->getDelayTolerance()
                 - omnetpp::simTime() - task->getTaskSize() / serverFrequency;
         while(rit != waitingQueue.rend() && (*rit)->getCreationTime() + (*rit)->getDelayTolerance()
-                - omnetpp::simTime() - (*rit)->getRequiredCycle() / serverFrequency > taskMaxWaitTime)
+                - omnetpp::simTime() - (*rit)->getRequiredCycle() / serverFrequency > taskSpareTime)
             ++rit;
         waitingQueue.insert(rit.base(), task);
         totalRequiredCycle += task->getRequiredCycle();
@@ -730,14 +582,16 @@ void TaskQueue::insertTaskIntoWaitingQueue(Task *task) {
     }
 }
 
+double TaskQueue::getCurrentRunningTaskFinishedCycle() {
+    if (!runningTask)
+        return 0;
+    return (omnetpp::simTime() - runningTask->getSendingTime()).dbl() * serverFrequency;
+}
+
 ServerStatus *TaskQueue::getServerStatus() {
     Enter_Method("getServerStatus()");
-    double requiredCycle = totalRequiredCycle;
-    if (runningTask) {
-        requiredCycle = totalRequiredCycle - (omnetpp::simTime() - runningTask->getSendingTime()).dbl() * serverFrequency;
-    }
     ServerStatus *serverStatus = new ServerStatus(serverId, serverFrequency, serverMemory,
-            requiredCycle, totalMemoryConsumed);
+            totalRequiredCycle - getCurrentRunningTaskFinishedCycle(), totalMemoryConsumed);
 
     return serverStatus;
 }
@@ -763,38 +617,18 @@ Task *TaskQueue::createSubTask(Task *task, int subTaskIdx) {
     return dupTask;
 }
 
-double TaskQueue::getRegionLoad(int exceptServerId) {
-    std::vector<int> servers;
-    for (int i = 0; i < neighborServers.size(); ++i) {
-        if (neighborServers[i] == exceptServerId)
-            continue;
-        servers.push_back(neighborServers[i]);
-    }
-
-    double regionLoad = TaskQueue::getAvgLoad(servers);
-    return regionLoad;
-}
-
-double TaskQueue::getAvgLoad(const std::vector<int>& servers) {
-    Enter_Method("getAvgLoad()");
-
-    double avgLoad;
-    TaskQueue *taskQueueModule;
-    ServerStatus *serverStatus;
-    for (int i = 0; i < servers.size(); ++i) {
-        taskQueueModule = omnetpp::check_and_cast<TaskQueue*>(getSystemModule()->getSubmodule("edgeServer", servers[i])->getSubmodule("taskQueue"));
-        serverStatus = taskQueueModule->getServerStatus();
-        avgLoad = serverStatus->getTotalRequiredCycle() / serverStatus->getServerFrequency();
-        delete serverStatus;
-        delete taskQueueModule;
-    }
-    avgLoad /= servers.size();
-
-    return avgLoad;
-}
-
 void TaskQueue::refreshDisplay() const {
 }
 
 void TaskQueue::finish() {
+    for (std::list<Task*>::iterator it = waitingQueue.begin(); it != waitingQueue.end(); ++it)
+        cancelAndDelete(*it);
+
+    for (std::list<Task*>::iterator it = garbageQueue.begin(); it != garbageQueue.end(); ++it)
+        cancelAndDelete(*it);
+
+    if (runningTask)
+        cancelAndDelete(runningTask);
+
+    cancelAndDelete(serverInfoSignalMsg);
 }

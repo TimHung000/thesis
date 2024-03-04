@@ -61,20 +61,22 @@ class TaskQueue : public omnetpp::cSimpleModule
         void greedyDispatchingAlgo2(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo(omnetpp::cMessage *msg);
         void proposedDispatchingAlgo2(omnetpp::cMessage *msg);
-        void proposedDispatchingAlgo3(omnetpp::cMessage *msg);
 
+        void offloadTask(Task *task);
+        std::vector<Task*> preemptive(Task *task);
+        double getScore(double spareTime, double maxSpareTime, double wholeTask);
         void insertTaskIntoWaitingQueue(Task *task);
-        std::vector<Task*> replaceTaskWithSubTask(Task *task);
 
         void scheduling();
         Task *createSubTask(Task *task, int subTaskIdx);
+
+        double getCurrentRunningTaskFinishedCycle();
 
     public:
         ~TaskQueue();
         ServerStatus *getServerStatus();
         ServerStatus *getServerStatus(int serverId);
-        double getRegionLoad(int exceptServerId);
-        double getAvgLoad(const std::vector<int>& servers);
+
 };
 
 #endif
