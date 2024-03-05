@@ -368,32 +368,105 @@ void TaskQueue::proposedDispatchingAlgo(omnetpp::cMessage *msg) {
 }
 
 void TaskQueue::proposedDispatchingAlgo2(omnetpp::cMessage *msg) {
+    Task *incomingTask = omnetpp::check_and_cast<Task*>(msg);
 
-}
+    // task exceed deadline
+    if (omnetpp::simTime() > incomingTask->getCreationTime() + incomingTask->getDelayTolerance()) {
+        send(incomingTask, "taskFinishedOut");
+        totalTaskFailed += 1;
+        return;
+    }
 
-void TaskQueue::offloadTask(Task *task) {
-    std::vector<ServerStatus*> neighborServerStatusVec;
+    omnetpp::simtime_t incomingTaskDeadline = incomingTask->getCreationTime() + incomingTask->getDelayTolerance();
+    if (incomingTask->getSubTaskVec().size() == 1) { // task cannot split
 
-    for (int i = 0; i < neighborServers.size(); ++i)
-        neighborServerStatusVec.push_back(getServerStatus(neighborServers[i]));
+        std::vector<Task*> tasksToOffload = preemptive(incomingTask);
+        for (Task *task: tasksToOffload)
+            offloadTask(task);
 
-    std::sort(neighborServerStatusVec.begin(), neighborServerStatusVec.end(), [](ServerStatus *lhs, ServerStatus *rhs) {
-        return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
-    });
+    } else {  // task that can split
+        subTaskVector& subTaskVec = incomingTask->getSubTaskVecForUpdate();
 
-    int i = 0;
-    while (task->getHopPath().size() >= 2 &&
-            neighborServerStatusVec[i]->getServerId() == task->getHopPath()[task->getHopPath().size()-2])
-        ++i;
+        std::vector<ServerStatus*> serverStatusVec;
+        for (int i = 0; i < neighborServers.size(); ++i)
+            serverStatusVec.push_back(getServerStatus(neighborServers[i]));
+        serverStatusVec.push_back(getServerStatus());
 
-    task->setDestinationServer(neighborServerStatusVec[i]->getServerId());
-    send(task, "offloadOut");
+        std::sort(serverStatusVec.begin(), serverStatusVec.end(), [](ServerStatus *lhs,ServerStatus *rhs) {
+            return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
+        });
 
+        std::sort(subTaskVec.begin(), subTaskVec.end(), [](SubTask *lhs, SubTask *rhs) {
+            return lhs->getSubTaskRequiredCPUCycle() > rhs->getSubTaskRequiredCPUCycle();
+        });
+
+        const double predictedTimeInTransmit = getSystemModule()->par("linkDelay").doubleValue();
+
+        SubTask *curSubTask;
+        int serverIdx = 0;
+        int subTaskIdx = 0;
+        while (subTaskIdx < subTaskVec.size() && serverIdx < serverStatusVec.size()) {
+            curSubTask = subTaskVec[subTaskIdx];
+            omnetpp::simtime_t predictedFinishedTime = (serverStatusVec[serverIdx]->getTotalRequiredCycle() + curSubTask->getSubTaskRequiredCPUCycle())
+                    / serverStatusVec[serverIdx]->getServerFrequency() + omnetpp::simTime();
+            predictedFinishedTime += (serverStatusVec[serverIdx]->getServerId() == serverId) ? 0 : predictedTimeInTransmit;
+            if (predictedFinishedTime > incomingTaskDeadline)
+                break;
+
+            ++subTaskIdx;
+            ++serverIdx;
+        }
+        bool isSplittingTask = subTaskIdx == subTaskVec.size();
+
+        if (isSplittingTask) {
+            std::vector<Task*> taskToOffload;
+            for (int i = 0; i < subTaskVec.size(); ++i)
+                taskToOffload.push_back(createSubTask(incomingTask, i));
+            cancelAndDelete(incomingTask);
+
+            serverIdx = 0;
+            for (Task *task: taskToOffload) {
+                if (serverStatusVec[serverIdx]->getServerId() == serverId) {
+                    insertTaskIntoWaitingQueue(task);
+                } else {
+                    task->setDestinationServer(serverStatusVec[serverIdx]->getServerId());
+                    send(task, "offloadOut");
+                }
+                ++serverIdx;
+            }
+        } else {
+            offloadTask(incomingTask);
+        } // end if we are going to split the task
+    } // end if task can of can not split
 }
 
 std::vector<Task*> TaskQueue::preemptive(Task *task) {
-
     omnetpp::simtime_t taskDeadline = task->getCreationTime() + task->getDelayTolerance();
+
+    if (dispatchingAlgo == "Proposed2") {
+        if (task->getSubTaskVec().size() == task->getTotalSubTaskCount()) {
+            ServerStatus *thisServerStatus = getServerStatus();
+            std::vector<ServerStatus*> neighborServerStatusVec;
+            for (int i = 0; i < neighborServers.size(); ++i)
+                neighborServerStatusVec.push_back(getServerStatus(neighborServers[i]));
+
+            double totalRequiredCycle = 0.0;
+            double totalFrequency = 0.0;
+            for (auto curServerStatus: neighborServerStatusVec) {
+                totalRequiredCycle += curServerStatus->getTotalRequiredCycle();
+                totalFrequency += curServerStatus->getServerFrequency();
+            }
+            const double predictedTimeInTransmit = getSystemModule()->par("linkDelay").doubleValue();
+
+            omnetpp::simtime_t neighborAvgFinishedTime = omnetpp::simTime() + predictedTimeInTransmit + totalRequiredCycle / totalFrequency;
+            double neighborAvgFrequency = totalFrequency / neighborServers.size();
+
+
+            if (neighborAvgFinishedTime <
+                    omnetpp::simTime() + thisServerStatus->getTotalRequiredCycle() / thisServerStatus->getServerFrequency())
+                return {task};
+        }
+    }
 
 
     // calculate max spare time of waiting queue and incoming task
@@ -493,11 +566,29 @@ std::vector<Task*> TaskQueue::preemptive(Task *task) {
     return taskToOffload;
 }
 
+void TaskQueue::offloadTask(Task *task) {
+    std::vector<ServerStatus*> neighborServerStatusVec;
+
+    for (int i = 0; i < neighborServers.size(); ++i)
+        neighborServerStatusVec.push_back(getServerStatus(neighborServers[i]));
+
+    std::sort(neighborServerStatusVec.begin(), neighborServerStatusVec.end(), [](ServerStatus *lhs, ServerStatus *rhs) {
+        return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
+    });
+
+    int i = 0;
+    while (task->getHopPath().size() >= 2 &&
+            neighborServerStatusVec[i]->getServerId() == task->getHopPath()[task->getHopPath().size()-2])
+        ++i;
+
+    task->setDestinationServer(neighborServerStatusVec[i]->getServerId());
+    send(task, "offloadOut");
+
+}
+
 double TaskQueue::getScore(double spareTime, double maxSpareTime, double wholeTask) {
     return 1 * spareTime / maxSpareTime + wholeTask;
 }
-
-
 
 void TaskQueue::scheduling() {
     if (runningTask)
