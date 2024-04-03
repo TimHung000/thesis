@@ -36,9 +36,14 @@ network EdgeEnv
 
     connections allowunconnected:
         for row=0..rows-1, for col=0..cols-1 {
-            edgeServer[row * cols + col].ports++ <--> {  delay = 0.005s; } <--> edgeServer[row * cols + col + 1].ports++ if col + 1 != cols;
+            edgeServer[row * cols + col].ports++ <--> { delay = 0.005s; } <--> edgeServer[row * cols + col + 1].ports++ if col + 1 < cols;
 
-            edgeServer[row * cols + col].ports++ <--> {  delay = 0.005s; } <--> edgeServer[(row + 1) * cols + col].ports++ if row + 1 != rows;
+            edgeServer[row * cols + col].ports++ <--> { delay = 0.005s; } <--> edgeServer[(row + 1) * cols + col].ports++ if row + 1 < rows;
+        	
+        	edgeServer[row * cols + col].ports++ <--> { delay = 0.005s; } <--> edgeServer[(row + 1) * cols + col + 1].ports++ if row + 1 != rows && col + 1 < cols; 
+	        
+	        edgeServer[row * cols + col].ports++ <--> { delay = 0.005s; } <--> edgeServer[(row + 1) * cols + col - 1].ports++ if row + 1 != rows && col - 1 >= 0; 
+        	
         }
         for i=0..rows * cols - 1 {
             edgeServer[i].taskFinishedOut --> IdealChannel --> finishedTaskCollector.in++;
