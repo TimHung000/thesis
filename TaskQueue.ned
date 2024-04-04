@@ -16,8 +16,8 @@
 simple TaskQueue
 {
     parameters:
-        double memoryThreshold = 0.8;
-        int maximumHop = 10;
+        double threshold;
+        int maxHop;
         string dispatchingAlgo;
         @display("i=abstract/dispatcher");
         @signal[totalTaskDrop](type="double");
