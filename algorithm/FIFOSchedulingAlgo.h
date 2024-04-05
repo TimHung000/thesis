@@ -16,7 +16,9 @@ public:
     FIFOSchedulingAlgo(TaskQueue *taskQueue);
     ~FIFOSchedulingAlgo();
     void scheduling() override;
-    void insertTaskIntoWaitingQueue(Task *task) override;
+    std::list<Task*>::iterator insertTaskIntoWaitingQueue(Task *task) override;
+    std::list<Task*>::iterator insertTaskIntoWaitingQueue(Task *task, std::list<Task*>::iterator it) override;
+    std::list<Task*>::iterator getInsertionPoint(Task *task) override;
 };
 
 

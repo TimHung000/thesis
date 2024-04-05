@@ -53,16 +53,24 @@ void EDFSchedulingAlgo::scheduling() {
     }
 }
 
-void EDFSchedulingAlgo::insertTaskIntoWaitingQueue(Task *task) {
+std::list<Task*>::iterator EDFSchedulingAlgo::insertTaskIntoWaitingQueue(Task *task) {
+    std::list<Task*>::iterator it = getInsertionPoint(task);
+    it = insertTaskIntoWaitingQueue(task, it);
+    return it;
+}
+
+std::list<Task*>::iterator EDFSchedulingAlgo::insertTaskIntoWaitingQueue(Task *task, std::list<Task*>::iterator it) {
+    it = taskQueue->waitingQueue.insert(it, task);
+    taskQueue->totalRequiredCycle += task->getRequiredCycle();
+    taskQueue->totalMemoryConsumed += task->getTaskSize();
+    return it;
+}
+
+std::list<Task*>::iterator EDFSchedulingAlgo::getInsertionPoint(Task *task) {
     std::list<Task*>::reverse_iterator rit = taskQueue->waitingQueue.rbegin();
     omnetpp::simtime_t taskDeadline = task->getCreationTime() + task->getDelayTolerance();
     while(rit != taskQueue->waitingQueue.rend() && (*rit)->getCreationTime() + (*rit)->getDelayTolerance() > taskDeadline)
         ++rit;
-
-    taskQueue->waitingQueue.insert(rit.base(), task);
-    taskQueue->totalRequiredCycle += task->getRequiredCycle();
-    taskQueue->totalMemoryConsumed += task->getTaskSize();
+    return rit.base();
 }
-
-
 

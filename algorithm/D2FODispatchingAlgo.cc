@@ -1,5 +1,5 @@
 /*
- * GreedyDispatchingAlgo.cc
+ * D2FODispatchingAlgo.cc
  *
  *  Created on: Apr 3, 2024
  *      Author: tim
@@ -8,23 +8,25 @@
 
 #include <vector>
 #include <algorithm>
-#include "GreedyDispatchingAlgo.h"
+
+#include "D2FODispatchingAlgo.h"
 #include "TaskQueue.h"
 
 
-GreedyDispatchingAlgo::GreedyDispatchingAlgo(SchedulingAlgo *schedulingAlgo, TaskQueue *taskQueue) {
+D2FODispatchingAlgo::D2FODispatchingAlgo(SchedulingAlgo *schedulingAlgo, TaskQueue *taskQueue) {
     this->schedulingAlgo = schedulingAlgo;
     this->taskQueue = taskQueue;
 }
 
-GreedyDispatchingAlgo::~GreedyDispatchingAlgo() {}
+D2FODispatchingAlgo::~D2FODispatchingAlgo() {}
 
 // use cpu as criteria
-void GreedyDispatchingAlgo::execute(omnetpp::cMessage *msg) {
+void D2FODispatchingAlgo::execute(omnetpp::cMessage *msg) {
     Task *incomingTask = omnetpp::check_and_cast<Task*>(msg);
+    omnetpp::simtime_t incomingTaskDeadline = incomingTask->getCreationTime() + incomingTask->getDelayTolerance();
 
     // task exceed the deadline
-    if (omnetpp::simTime() > incomingTask->getCreationTime() + incomingTask->getDelayTolerance()) {
+    if (omnetpp::simTime() > incomingTaskDeadline) {
         taskQueue->totalTaskFailed += 1;
         taskQueue->send(incomingTask, "taskFinishedOut");
         return;
@@ -36,7 +38,7 @@ void GreedyDispatchingAlgo::execute(omnetpp::cMessage *msg) {
                 / taskQueue->serverFrequency;
 
     if (taskQueue->serverMemory - taskQueue->totalMemoryConsumed >= incomingTask->getTaskSize() &&
-            predictedFinishedTime <= incomingTask->getCreationTime() + incomingTask->getDelayTolerance()) {
+            predictedFinishedTime <= incomingTaskDeadline) {
         schedulingAlgo->insertTaskIntoWaitingQueue(incomingTask);
     } else {
         // get neighbor server status

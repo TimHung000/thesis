@@ -54,14 +54,27 @@ void SSTSchedulingAlgo::scheduling() {
     }
 }
 
-void SSTSchedulingAlgo::insertTaskIntoWaitingQueue(Task *task) {
+std::list<Task*>::iterator SSTSchedulingAlgo::insertTaskIntoWaitingQueue(Task *task) {
+    std::list<Task*>::iterator it = getInsertionPoint(task);
+    it = insertTaskIntoWaitingQueue(task, it);
+    return it;
+}
+
+std::list<Task*>::iterator SSTSchedulingAlgo::insertTaskIntoWaitingQueue(Task *task, std::list<Task*>::iterator it) {
+    it = taskQueue->waitingQueue.insert(it, task);
+    taskQueue->totalRequiredCycle += task->getRequiredCycle();
+    taskQueue->totalMemoryConsumed += task->getTaskSize();
+    return it;
+}
+
+std::list<Task*>::iterator SSTSchedulingAlgo::getInsertionPoint(Task *task) {
     std::list<Task*>::reverse_iterator rit = taskQueue->waitingQueue.rbegin();
     omnetpp::simtime_t taskSpareTime = task->getCreationTime() + task->getDelayTolerance()
             - omnetpp::simTime() - task->getTaskSize() / taskQueue->serverFrequency;
     while(rit != taskQueue->waitingQueue.rend() && (*rit)->getCreationTime() + (*rit)->getDelayTolerance()
             - omnetpp::simTime() - (*rit)->getRequiredCycle() / taskQueue->serverFrequency > taskSpareTime)
         ++rit;
-    taskQueue->waitingQueue.insert(rit.base(), task);
-    taskQueue->totalRequiredCycle += task->getRequiredCycle();
-    taskQueue->totalMemoryConsumed += task->getTaskSize();
+
+    return rit.base();
 }
+

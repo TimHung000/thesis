@@ -25,6 +25,13 @@ GreedyPartitionDispatchingAlgo::~GreedyPartitionDispatchingAlgo() {}
 
 void GreedyPartitionDispatchingAlgo::execute(omnetpp::cMessage *msg) {
     Task *incomingTask = omnetpp::check_and_cast<Task*>(msg);
+    omnetpp::simtime_t incomingTaskDeadline = incomingTask->getCreationTime() + incomingTask->getDelayTolerance();
+    // task exceed the deadline
+    if (omnetpp::simTime() > incomingTaskDeadline) {
+        taskQueue->totalTaskFailed += 1;
+        taskQueue->send(incomingTask, "taskFinishedOut");
+        return;
+    }
 
     if (incomingTask->getSubTaskVec().size() > 1) {
         splitAndOffload(incomingTask);
@@ -33,12 +40,15 @@ void GreedyPartitionDispatchingAlgo::execute(omnetpp::cMessage *msg) {
                 (taskQueue->totalRequiredCycle - taskQueue->getCurrentRunningTaskFinishedCycle() + incomingTask->getRequiredCycle())
                     / taskQueue->serverFrequency;
         if (taskQueue->serverMemory - taskQueue->totalMemoryConsumed >= incomingTask->getTaskSize() &&
-                predictedFinishedTime <= incomingTask->getCreationTime() + incomingTask->getDelayTolerance()) {
+                predictedFinishedTime <= incomingTaskDeadline) {
             schedulingAlgo->insertTaskIntoWaitingQueue(incomingTask);
         } else {
             taskDispatching(incomingTask);
         }
     }
+
+    schedulingAlgo->scheduling();
+
 }
 
 void GreedyPartitionDispatchingAlgo::splitAndOffload(Task *task) {
@@ -62,12 +72,8 @@ void GreedyPartitionDispatchingAlgo::splitAndOffload(Task *task) {
     });
 
     for (int i = 0; i < taskToOffload.size(); ++i) {
-        if (serverStatusVec[i]->getServerId() == taskQueue->serverId) {
-            schedulingAlgo->insertTaskIntoWaitingQueue(taskToOffload[i]);
-        } else {
-            taskToOffload[i]->setDestinationServer(serverStatusVec[i]->getServerId());
-            taskQueue->send(taskToOffload[i], "offloadOut");
-        }
+        taskToOffload[i]->setDestinationServer(serverStatusVec[0]->getServerId());
+        taskQueue->send(taskToOffload[i], "offloadOut");
     }
 }
 

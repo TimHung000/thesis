@@ -38,8 +38,8 @@ void RandomWalkLoadBalancingDispatchingAlgo::execute(omnetpp::cMessage *msg) {
         else
             taskQueue->garbageQueue.push_back(incomingTask);
     } else {
-//        double curThreshold = static_cast<double>(steps) / maximumHop * threshold;
-        if (systemLoad <= threshold) {
+        double curThreshold = static_cast<double>(steps) / maximumHop * threshold;
+        if (systemLoad <= curThreshold) {
             if (taskQueue->serverMemory - taskQueue->totalMemoryConsumed >= incomingTask->getTaskSize())
                 schedulingAlgo->insertTaskIntoWaitingQueue(incomingTask);
             else

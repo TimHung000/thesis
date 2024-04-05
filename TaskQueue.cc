@@ -15,16 +15,18 @@
 #include <limits>
 
 #include "TaskQueue.h"
+
 #include "Task_m.h"
 #include "SubTask.h"
 #include "ServerStatus.h"
 
 #include "algorithm/LocalDispatchingAlgo.h"
-#include "algorithm/GreedyDispatchingAlgo.h"
 #include "algorithm/RandomDispatchingAlgo.h"
-#include "algorithm/ProposedDispatchingAlgo.h"
+#include "algorithm/D2FODispatchingAlgo.h"
 #include "algorithm/RandomWalkLoadBalancingDispatchingAlgo.h"
+#include "algorithm/ProposedDispatchingAlgo.h"
 #include "algorithm/GreedyPartitionDispatchingAlgo.h"
+#include "algorithm/RandomPartitionDispatchingAlgo.h"
 
 #include "algorithm/FIFOSchedulingAlgo.h"
 #include "algorithm/EDFSchedulingAlgo.h"
@@ -41,8 +43,8 @@ DispatchingAlgo *TaskQueue::getDispatchingAlgo(std::string name, SchedulingAlgo 
     else if (name == "Random") {
         dispatchingAlgo = new RandomDispatchingAlgo(schedulingAlgo, taskQueue);
     }
-    else if (name == "Greedy") {
-        dispatchingAlgo = new GreedyDispatchingAlgo(schedulingAlgo, taskQueue);
+    else if (name == "D2FO") {
+        dispatchingAlgo = new D2FODispatchingAlgo(schedulingAlgo, taskQueue);
     }
     else if (name == "Proposed") {
         dispatchingAlgo = new ProposedDispatchingAlgo(schedulingAlgo, taskQueue);
@@ -52,6 +54,9 @@ DispatchingAlgo *TaskQueue::getDispatchingAlgo(std::string name, SchedulingAlgo 
     }
     else if (name == "GreedyPartition") {
         dispatchingAlgo = new GreedyPartitionDispatchingAlgo(schedulingAlgo, taskQueue);
+    }
+    else if (name == "RandomPartition") {
+        dispatchingAlgo = new RandomPartitionDispatchingAlgo(schedulingAlgo, taskQueue);
     }
     else {
         dispatchingAlgo = new ProposedDispatchingAlgo(schedulingAlgo, taskQueue);

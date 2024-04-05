@@ -8,7 +8,8 @@
 #include "Utility.h"
 
 double getScore(double spareTime, double maxSpareTime, double wholeTask) {
-    return 1 * spareTime / maxSpareTime + wholeTask;
+    return spareTime / maxSpareTime + wholeTask;
+//    return wholeTask;
 }
 
 Task *createSubTask(Task *task, int subTaskIdx) {

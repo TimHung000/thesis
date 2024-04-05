@@ -21,7 +21,7 @@ protected:
     void taskDispatching(Task *task);
     bool isNeighborLoadLessThanServerLoad();
     void taskOffloading(Task *task);
-    bool trySplitAndOffload(Task *task);
+    void trySplitAndOffload(Task *task);
 };
 
 
