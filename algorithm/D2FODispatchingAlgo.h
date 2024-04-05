@@ -14,7 +14,8 @@ public:
     D2FODispatchingAlgo(SchedulingAlgo *schedulingAlgo, TaskQueue *taskQueue);
     ~D2FODispatchingAlgo();
     void execute(omnetpp::cMessage *msg) override;
-
+protected:
+    void taskDispatching(Task *task);
 };
 
 

@@ -136,39 +136,22 @@ bool ProposedDispatchingAlgo::isNeighborLoadLessThanServerLoad() {
     return res;
 }
 
-
 std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
     omnetpp::simtime_t taskDeadline = task->getCreationTime() + task->getDelayTolerance();
 
     // calculate max spare time of waiting queue and incoming task
+    std::list<Task*>::iterator insertionPoint = schedulingAlgo->getInsertionPoint(task);
+
     double maxSpareTime = taskDeadline.dbl() - task->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime().dbl();
     double curSpareTime;
-    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != taskQueue->waitingQueue.end(); ++it) {
+    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != insertionPoint; ++it) {
         curSpareTime = ((*it)->getCreationTime() + (*it)->getDelayTolerance() - (*it)->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl();
         if (curSpareTime > maxSpareTime)
             maxSpareTime = curSpareTime;
     }
 
-    // priority queue for all score higher than incoming task
-    auto compare = [=](Task* lhs, Task* rhs) {
-        double lhsScore = getScore(
-                    (lhs->getCreationTime() + lhs->getDelayTolerance() -
-                            lhs->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
-                    maxSpareTime,
-                    static_cast<double>(lhs->getSubTaskVec().size() == lhs->getTotalSubTaskCount())
-                );
-        double rhsScore = getScore(
-                    (rhs->getCreationTime() + rhs->getDelayTolerance() -
-                        rhs->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
-                    maxSpareTime,
-                    static_cast<double>(rhs->getSubTaskVec().size() == rhs->getTotalSubTaskCount())
-                );
-        return lhsScore < rhsScore;
-    };
-    std::priority_queue<Task*, std::vector<Task*>, decltype(compare)> maxHeap(compare);
-
-
     // find all the task that can be moved out
+    std::vector<Task*> taskToBeReplaced;
     double canReleaseCycle = 0.0;
     double taskScore = getScore(
                 (task->getCreationTime() + task->getDelayTolerance() -
@@ -177,15 +160,16 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
                 static_cast<double>(task->getSubTaskVec().size() == task->getTotalSubTaskCount())
             );
 
-    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != taskQueue->waitingQueue.end(); ++it) {
+    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != insertionPoint; ++it) {
         double curScore = getScore(
                     ((*it)->getCreationTime() + (*it)->getDelayTolerance() -
                         (*it)->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
                     maxSpareTime,
                     static_cast<double>((*it)->getSubTaskVec().size() == (*it)->getTotalSubTaskCount())
                 );
+
         if (curScore > taskScore) {
-            maxHeap.push(*it);
+            taskToBeReplaced.push_back(*it);
             canReleaseCycle += (*it)->getRequiredCycle();
         }
     }
@@ -196,19 +180,16 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
     if (omnetpp::simTime() + (remainedRequiredCycle - canReleaseCycle + task->getRequiredCycle()) / taskQueue->serverFrequency > taskDeadline)
         taskToOffload.push_back(task);
     else {
-        std::list<Task*>::iterator tmpIt;
-        while (!maxHeap.empty() &&
-                omnetpp::simTime() + (remainedRequiredCycle + task->getRequiredCycle()) / taskQueue->serverFrequency > taskDeadline) {
-            Task *curTask = maxHeap.top();
-            maxHeap.pop();
+        for (std::vector<Task*>::reverse_iterator rit = taskToBeReplaced.rbegin(); rit != taskToBeReplaced.rend(); ++rit) {
+            Task *curTask = *rit;
+            if (omnetpp::simTime() + (remainedRequiredCycle + task->getRequiredCycle()) / taskQueue->serverFrequency <= taskDeadline)
+                break;
             taskQueue->waitingQueue.erase(std::find(taskQueue->waitingQueue.begin(), taskQueue->waitingQueue.end(), curTask));
             taskQueue->totalRequiredCycle -= curTask->getRequiredCycle();
             taskQueue->totalMemoryConsumed -= curTask->getTaskSize();
             taskToOffload.push_back(curTask);
             remainedRequiredCycle -= curTask->getRequiredCycle();
         }
-
-
         schedulingAlgo->insertTaskIntoWaitingQueue(task);
 
     } // end if incoming task can be inserted into waiting Queue
@@ -233,4 +214,7 @@ void ProposedDispatchingAlgo::taskDispatching(Task *task) {
 
     task->setDestinationServer(neighborServerStatusVec[i]->getServerId());
     taskQueue->send(task, "offloadOut");
+
+    for (auto& status: neighborServerStatusVec)
+        delete status;
 }

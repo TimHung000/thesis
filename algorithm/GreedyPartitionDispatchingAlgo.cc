@@ -58,22 +58,17 @@ void GreedyPartitionDispatchingAlgo::splitAndOffload(Task *task) {
         taskToOffload.push_back(createSubTask(task, i));
     taskQueue->cancelAndDelete(task);
 
-    std::vector<ServerStatus*> serverStatusVec;
-    for (int i = 0; i < taskQueue->neighborServers.size(); ++i)
-        serverStatusVec.push_back(taskQueue->getServerStatus(taskQueue->neighborServers[i]));
-    serverStatusVec.push_back(taskQueue->getServerStatus());
-
-    std::sort(serverStatusVec.begin(), serverStatusVec.end(), [](ServerStatus *lhs,ServerStatus *rhs) {
-        return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
-    });
-
-    std::sort(taskToOffload.begin(), taskToOffload.end(), [](Task *lhs, Task *rhs) {
-        return lhs->getRequiredCycle() > rhs->getRequiredCycle();
-    });
-
-    for (int i = 0; i < taskToOffload.size(); ++i) {
-        taskToOffload[i]->setDestinationServer(serverStatusVec[0]->getServerId());
-        taskQueue->send(taskToOffload[i], "offloadOut");
+    for (Task *curTask: taskToOffload) {
+        omnetpp::simtime_t predictedFinishedTime = omnetpp::simTime() +
+                (taskQueue->totalRequiredCycle - taskQueue->getCurrentRunningTaskFinishedCycle() + curTask->getRequiredCycle())
+                    / taskQueue->serverFrequency;
+        omnetpp::simtime_t curTaskDeadline = curTask->getCreationTime() + curTask->getDelayTolerance();
+        if (taskQueue->serverMemory - taskQueue->totalMemoryConsumed >= curTask->getTaskSize() &&
+                predictedFinishedTime <= curTaskDeadline) {
+            schedulingAlgo->insertTaskIntoWaitingQueue(curTask);
+        } else {
+            taskDispatching(curTask);
+        }
     }
 }
 
@@ -87,11 +82,9 @@ void GreedyPartitionDispatchingAlgo::taskDispatching(Task *task) {
         return lhs->getTotalRequiredCycle() / lhs->getServerFrequency() < rhs->getTotalRequiredCycle() / rhs->getServerFrequency();
     });
 
-    int i = 0;
-    while (task->getHopPath().size() >= 2 &&
-            neighborServerStatusVec[i]->getServerId() == task->getHopPath()[task->getHopPath().size()-2])
-        ++i;
-
-    task->setDestinationServer(neighborServerStatusVec[i]->getServerId());
+    task->setDestinationServer(neighborServerStatusVec[0]->getServerId());
     taskQueue->send(task, "offloadOut");
+
+    for (auto& status: neighborServerStatusVec)
+        delete status;
 }
