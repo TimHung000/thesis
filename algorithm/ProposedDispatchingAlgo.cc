@@ -144,10 +144,16 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
 
     double maxSpareTime = taskDeadline.dbl() - task->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime().dbl();
     double curSpareTime;
-    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != insertionPoint; ++it) {
+    double maxWholeRequiredCycle = task->getWholeRequiredCycle();
+    double curWholeRequiredCycle;
+    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != taskQueue->waitingQueue.end(); ++it) {
         curSpareTime = ((*it)->getCreationTime() + (*it)->getDelayTolerance() - (*it)->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl();
+        curWholeRequiredCycle = (*it)->getWholeRequiredCycle();
         if (curSpareTime > maxSpareTime)
             maxSpareTime = curSpareTime;
+
+        if (curWholeRequiredCycle > maxWholeRequiredCycle)
+            maxWholeRequiredCycle = curWholeRequiredCycle;
     }
 
     // find all the task that can be moved out
@@ -157,15 +163,20 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
                 (task->getCreationTime() + task->getDelayTolerance() -
                         task->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
                 maxSpareTime,
-                static_cast<double>(task->getSubTaskVec().size() == task->getTotalSubTaskCount())
+                static_cast<double>(task->getSubTaskVec().size() == task->getTotalSubTaskCount()),
+                task->getWholeRequiredCycle(),
+                maxWholeRequiredCycle
             );
 
-    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != insertionPoint; ++it) {
+
+    for (std::list<Task*>::iterator it = taskQueue->waitingQueue.begin(); it != taskQueue->waitingQueue.end(); ++it) {
         double curScore = getScore(
                     ((*it)->getCreationTime() + (*it)->getDelayTolerance() -
                         (*it)->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
                     maxSpareTime,
-                    static_cast<double>((*it)->getSubTaskVec().size() == (*it)->getTotalSubTaskCount())
+                    static_cast<double>((*it)->getSubTaskVec().size() == (*it)->getTotalSubTaskCount()),
+                    (*it)->getWholeRequiredCycle(),
+                    maxWholeRequiredCycle
                 );
 
         if (curScore > taskScore) {
@@ -174,6 +185,25 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
         }
     }
 
+    std::sort(taskToBeReplaced.begin(), taskToBeReplaced.end(), [=](const Task *lhs, const Task *rhs) {
+        double lhsScore = getScore(
+                (lhs->getCreationTime() + lhs->getDelayTolerance() -
+                        lhs->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
+                maxSpareTime,
+                static_cast<double>(lhs->getSubTaskVec().size() == lhs->getTotalSubTaskCount()),
+                lhs->getWholeRequiredCycle(),
+                maxWholeRequiredCycle
+            );
+        double rhsScore = getScore(
+                (rhs->getCreationTime() + rhs->getDelayTolerance() -
+                        rhs->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
+                maxSpareTime,
+                static_cast<double>(rhs->getSubTaskVec().size() == rhs->getTotalSubTaskCount()),
+                rhs->getWholeRequiredCycle(),
+                maxWholeRequiredCycle
+            );
+        return lhsScore < rhsScore;
+    });
 
     double remainedRequiredCycle = taskQueue->totalRequiredCycle - taskQueue->getCurrentRunningTaskFinishedCycle();
     std::vector<Task*> taskToOffload;

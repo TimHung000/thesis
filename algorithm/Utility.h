@@ -11,7 +11,7 @@
 #include "Task_m.h"
 
 
-double getScore(double spareTime, double maxSpareTime, double wholeTask);
+double getScore(double spareTime, double maxSpareTime, double wholeTask, double wholeRequiredCycle, double maxWholeRequiredCycle);
 Task *createSubTask(Task *task, int subTaskIdx);
 
 
