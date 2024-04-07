@@ -140,8 +140,6 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
     omnetpp::simtime_t taskDeadline = task->getCreationTime() + task->getDelayTolerance();
 
     // calculate max spare time of waiting queue and incoming task
-    std::list<Task*>::iterator insertionPoint = schedulingAlgo->getInsertionPoint(task);
-
     double maxSpareTime = taskDeadline.dbl() - task->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime().dbl();
     double curSpareTime;
     double maxWholeRequiredCycle = task->getWholeRequiredCycle();

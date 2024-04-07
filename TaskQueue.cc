@@ -46,7 +46,7 @@ DispatchingAlgo *TaskQueue::getDispatchingAlgo(std::string name, SchedulingAlgo 
     else if (name == "D2FO") {
         dispatchingAlgo = new D2FODispatchingAlgo(schedulingAlgo, taskQueue);
     }
-    else if (name == "Proposed") {
+    else if (name == "DLAGO-TP") {
         dispatchingAlgo = new ProposedDispatchingAlgo(schedulingAlgo, taskQueue);
     }
     else if (name == "RandomWalk") {
