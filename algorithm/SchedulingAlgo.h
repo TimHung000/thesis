@@ -22,6 +22,7 @@ public:
     virtual std::list<Task*>::iterator getInsertionPoint(Task *task) = 0;
 protected:
     TaskQueue *taskQueue;
+    void cleanExpiredTask();
 };
 
 

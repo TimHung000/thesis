@@ -21,9 +21,7 @@
 #include "ServerStatus.h"
 
 #include "algorithm/LocalDispatchingAlgo.h"
-#include "algorithm/RandomDispatchingAlgo.h"
 #include "algorithm/D2FODispatchingAlgo.h"
-#include "algorithm/RandomWalkLoadBalancingDispatchingAlgo.h"
 #include "algorithm/ProposedDispatchingAlgo.h"
 #include "algorithm/GreedyPartitionDispatchingAlgo.h"
 #include "algorithm/RandomPartitionDispatchingAlgo.h"
@@ -40,17 +38,11 @@ DispatchingAlgo *TaskQueue::getDispatchingAlgo(std::string name, SchedulingAlgo 
     if (name == "Local") {
         dispatchingAlgo = new LocalDispatchingAlgo(schedulingAlgo, taskQueue);
     }
-    else if (name == "Random") {
-        dispatchingAlgo = new RandomDispatchingAlgo(schedulingAlgo, taskQueue);
-    }
     else if (name == "D2FO") {
         dispatchingAlgo = new D2FODispatchingAlgo(schedulingAlgo, taskQueue);
     }
     else if (name == "DLAGO-TP") {
         dispatchingAlgo = new ProposedDispatchingAlgo(schedulingAlgo, taskQueue);
-    }
-    else if (name == "RandomWalk") {
-        dispatchingAlgo = new RandomWalkLoadBalancingDispatchingAlgo(schedulingAlgo, taskQueue);
     }
     else if (name == "GreedyPartition") {
         dispatchingAlgo = new GreedyPartitionDispatchingAlgo(schedulingAlgo, taskQueue);

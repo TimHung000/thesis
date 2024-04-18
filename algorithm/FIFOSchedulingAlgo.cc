@@ -20,20 +20,10 @@ void FIFOSchedulingAlgo::scheduling() {
     if (taskQueue->runningTask)
         return;
 
-    std::list<Task*>::iterator it = taskQueue->waitingQueue.begin();
-    while (it != taskQueue->waitingQueue.end()) {
-        if (omnetpp::simTime() > (*it)->getCreationTime() + (*it)->getDelayTolerance()) {
-            taskQueue->totalRequiredCycle -= (*it)->getRequiredCycle();
-            taskQueue->totalMemoryConsumed -= (*it)->getTaskSize();
-            taskQueue->send((*it), "taskFinishedOut");
-            taskQueue->totalTaskFailed += 1;
-            it = taskQueue->waitingQueue.erase(it);
-        } else
-            ++it;
-    }
+    cleanExpiredTask();
 
     // remove tasks that exceed deadline to task collector
-    it = taskQueue->garbageQueue.begin();
+    auto it = taskQueue->garbageQueue.begin();
     while (it != taskQueue->garbageQueue.end()) {
         if (omnetpp::simTime() > (*it)->getCreationTime() + (*it)->getDelayTolerance()) {
             taskQueue->totalRequiredCycle -= (*it)->getRequiredCycle();

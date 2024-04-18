@@ -21,6 +21,4 @@ protected:
     TaskQueue *taskQueue;
 };
 
-
-
 #endif /* DISPATCHINGALGO_H_ */

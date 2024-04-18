@@ -18,23 +18,12 @@ void EDFSchedulingAlgo::scheduling() {
     if (taskQueue->runningTask)
         return;
 
-    // remove tasks that exceed deadline to task collector
-    std::list<Task*>::iterator it = taskQueue->garbageQueue.begin();
-    while (it != taskQueue->garbageQueue.end()) {
-        if (omnetpp::simTime() > (*it)->getCreationTime() + (*it)->getDelayTolerance()) {
-            taskQueue->totalRequiredCycle -= (*it)->getRequiredCycle();
-            taskQueue->totalMemoryConsumed -= (*it)->getTaskSize();
-            taskQueue->send((*it), "taskFinishedOut");
-            taskQueue->totalTaskFailed += 1;
-            it = taskQueue->garbageQueue.erase(it);
-        } else
-            ++it;
-    }
+    cleanExpiredTask();
 
 
     // garbage queue is used to collect the task not yet exceed the deadline, but can't be processed in time by the server
     // move tasks that will exceed the deadline to garbage queue
-    it = taskQueue->waitingQueue.begin();
+    auto it = taskQueue->waitingQueue.begin();
     while (it != taskQueue->waitingQueue.end() &&
             omnetpp::simTime() + (*it)->getRequiredCycle() / taskQueue->serverFrequency >
                 (*it)->getCreationTime() + (*it)->getDelayTolerance()) {
