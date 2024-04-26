@@ -880,12 +880,12 @@ void Task::setFinishedTime(omnetpp::simtime_t finishedTime)
     this->finishedTime = finishedTime;
 }
 
-omnetpp::simtime_t Task::getDelayTolerance() const
+double Task::getDelayTolerance() const
 {
     return this->delayTolerance;
 }
 
-void Task::setDelayTolerance(omnetpp::simtime_t delayTolerance)
+void Task::setDelayTolerance(double delayTolerance)
 {
     this->delayTolerance = delayTolerance;
 }
@@ -1236,7 +1236,7 @@ const char *TaskDescriptor::getFieldTypeString(int field) const
         "omnetpp::simtime_t",    // FIELD_totalProcessingTime
         "omnetpp::simtime_t",    // FIELD_totalPropagationTime
         "omnetpp::simtime_t",    // FIELD_finishedTime
-        "omnetpp::simtime_t",    // FIELD_delayTolerance
+        "double",    // FIELD_delayTolerance
         "double",    // FIELD_taskSize
         "double",    // FIELD_wholeTaskSize
         "double",    // FIELD_requiredCycle
@@ -1341,7 +1341,7 @@ std::string TaskDescriptor::getFieldValueAsString(omnetpp::any_ptr object, int f
         case FIELD_totalProcessingTime: return simtime2string(pp->getTotalProcessingTime());
         case FIELD_totalPropagationTime: return simtime2string(pp->getTotalPropagationTime());
         case FIELD_finishedTime: return simtime2string(pp->getFinishedTime());
-        case FIELD_delayTolerance: return simtime2string(pp->getDelayTolerance());
+        case FIELD_delayTolerance: return double2string(pp->getDelayTolerance());
         case FIELD_taskSize: return double2string(pp->getTaskSize());
         case FIELD_wholeTaskSize: return double2string(pp->getWholeTaskSize());
         case FIELD_requiredCycle: return double2string(pp->getRequiredCycle());
@@ -1378,7 +1378,7 @@ void TaskDescriptor::setFieldValueAsString(omnetpp::any_ptr object, int field, i
         case FIELD_totalProcessingTime: pp->setTotalProcessingTime(string2simtime(value)); break;
         case FIELD_totalPropagationTime: pp->setTotalPropagationTime(string2simtime(value)); break;
         case FIELD_finishedTime: pp->setFinishedTime(string2simtime(value)); break;
-        case FIELD_delayTolerance: pp->setDelayTolerance(string2simtime(value)); break;
+        case FIELD_delayTolerance: pp->setDelayTolerance(string2double(value)); break;
         case FIELD_taskSize: pp->setTaskSize(string2double(value)); break;
         case FIELD_wholeTaskSize: pp->setWholeTaskSize(string2double(value)); break;
         case FIELD_requiredCycle: pp->setRequiredCycle(string2double(value)); break;
@@ -1411,7 +1411,7 @@ omnetpp::cValue TaskDescriptor::getFieldValue(omnetpp::any_ptr object, int field
         case FIELD_totalProcessingTime: return pp->getTotalProcessingTime().dbl();
         case FIELD_totalPropagationTime: return pp->getTotalPropagationTime().dbl();
         case FIELD_finishedTime: return pp->getFinishedTime().dbl();
-        case FIELD_delayTolerance: return pp->getDelayTolerance().dbl();
+        case FIELD_delayTolerance: return pp->getDelayTolerance();
         case FIELD_taskSize: return pp->getTaskSize();
         case FIELD_wholeTaskSize: return pp->getWholeTaskSize();
         case FIELD_requiredCycle: return pp->getRequiredCycle();

@@ -16,38 +16,22 @@ Define_Module(FinishedTaskCollector);
 
 void FinishedTaskCollector::initialize()
 {
-//    taskIdSignal = registerSignal("taskId");
-//    creationTimeSignal = registerSignal("creationTime");
-//    totalWaitingTimeSignal = registerSignal("totalWaitingTime");
-//    totalProcessingTimeSignal = registerSignal("totalProcessingTime");
-//    totalPropagationTimeSignal = registerSignal("totalPropagationTime");
-//    deadlineSignal = registerSignal("deadline");
-//    finishedTimeSignal = registerSignal("finishedTime");
-//    taskSizeSignal = registerSignal("taskSize");
-//    requiredCycleSignal = registerSignal("requiredCycle");
-//    processedCyclesSignal = registerSignal("processedCycles");
-//    arrivingServerSignal = registerSignal("arrivingServer");
-//    runningServerSignal = registerSignal("runningServer");
-//    hopCountSignal = registerSignal("hopCount");
     isCompletedSignal = registerSignal("isCompleted");
-//    totalSubTaskCountSignal = registerSignal("totalSubTaskCount");
     splitTaskPartialCompleteSignal = registerSignal("splitTaskPartialComplete");
     splitTaskCompleteSignal = registerSignal("splitTaskComplete");
-    totalTimeSignal = registerSignal("totalTime");
-    totalRewardSignal = registerSignal("totalReward");
+    taskTimeSignal = registerSignal("taskTime");
+    rewardSignal = registerSignal("reward");
+    completedDelayToleranceSignal = registerSignal("completedDelayTolerance");
+    delayToToleranceMultipleSignal = registerSignal("delayToToleranceMultiple");
 }
 
 void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
 {
     Task* task = omnetpp::check_and_cast<Task*>(msg);
 
-    // never split
     if (task->getTotalSubTaskCount() == task->getSubTaskVec().size()) {
-//        EV << "task not splited" << omnetpp::endl;
         emitSignal(task);
     } else {
-//        EV << "task has splited" << omnetpp::endl;
-
         int64_t taskId = task->getTaskId();
         std::unordered_map<int64_t, std::pair<std::vector<Task*>, int>>::iterator it = taskMap.find(taskId);
         if (it != taskMap.end()) {
@@ -71,24 +55,13 @@ void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
 void FinishedTaskCollector::emitSignal(Task *task) {
     ASSERT(task->getSubTaskVec().size() <= task->getTotalSubTaskCount());
 
-//    emit(taskIdSignal, static_cast<double>(task->getTaskId()));
-//    emit(creationTimeSignal, task->getCreationTime());
-//    emit(totalWaitingTimeSignal, task->getTotalWaitingTime());
-//    emit(totalProcessingTimeSignal, task->getTotalProcessingTime());
-//    emit(totalPropagationTimeSignal, task->getTotalPropagationTime());
-//    emit(deadlineSignal, task->getDeadline());
-//    emit(finishedTimeSignal, task->getFinishedTime());
-//    emit(taskSizeSignal, task->getTaskSize());
-//    emit(requiredCycleSignal, task->getRequiredCycle());
-//    emit(processedCyclesSignal, task->getProcessedCycle());
-//    emit(arrivingServerSignal, task->getArrivingServer());
-//    emit(runningServerSignal, task->getRunningServer());
-//    emit(hopCountSignal, task->getHopCount());
     emit(isCompletedSignal, task->isCompleted());
-//    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
     if (task->isCompleted()) {
-        emit(totalTimeSignal, task->getFinishedTime() - task->getCreationTime());
-        emit(totalRewardSignal, task->getReward());
+        emit(taskTimeSignal, (task->getFinishedTime() - task->getCreationTime()).dbl());
+        emit(rewardSignal, task->getReward());
+        emit(completedDelayToleranceSignal, task->getDelayTolerance());
+        emit(delayToToleranceMultipleSignal, task->getDelayTolerance() /
+                (task->getFinishedTime() - task->getCreationTime()).dbl());
     }
     cancelAndDelete(task);
 }
@@ -120,27 +93,16 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
     }
 
     ASSERT(subTaskCount <= task->getTotalSubTaskCount());
-    // task is the last in the vector
-//    emit(taskIdSignal, static_cast<double>(task->getTaskId()));
-//    emit(creationTimeSignal, task->getCreationTime());
-//    emit(totalWaitingTimeSignal, task->getTotalWaitingTime());
-//    emit(totalProcessingTimeSignal, task->getTotalProcessingTime());
-//    emit(totalPropagationTimeSignal, task->getTotalPropagationTime());
-//    emit(deadlineSignal, task->getDeadline());
-//    emit(finishedTimeSignal, task->getFinishedTime());
-//    emit(taskSizeSignal, totalTaskSize);
-//    emit(requiredCycleSignal, totalRequiredCycle);
-//    emit(processedCyclesSignal, task->getProcessedCycle());
-//    emit(arrivingServerSignal, task->getArrivingServer());
-//    emit(runningServerSignal, task->getRunningServer());
-//    emit(hopCountSignal, task->getHopCount());
+
     emit(isCompletedSignal, isCompleted);
-//    emit(totalSubTaskCountSignal, task->getTotalSubTaskCount());
     emit(splitTaskPartialCompleteSignal, (containCompletedTask && containNotCompletedTask));
     emit(splitTaskCompleteSignal, isCompleted);
     if (isCompleted) {
-        emit(totalTimeSignal, finishedTime - creationTime);
-        emit(totalRewardSignal, task->getReward());
+        emit(taskTimeSignal, (finishedTime - creationTime).dbl());
+        emit(rewardSignal, task->getReward());
+        emit(completedDelayToleranceSignal, task->getDelayTolerance());
+        emit(delayToToleranceMultipleSignal, task->getDelayTolerance() /
+                (task->getFinishedTime() - task->getCreationTime()).dbl());
     }
     for (int i = 0; i < subTaskVector.size(); ++i) {
         task = subTaskVector[i];

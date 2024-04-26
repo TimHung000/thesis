@@ -29,6 +29,7 @@
 #include "algorithm/FIFOSchedulingAlgo.h"
 #include "algorithm/EDFSchedulingAlgo.h"
 #include "algorithm/SSTSchedulingAlgo.h"
+#include "algorithm/PrioritySchedulingAlgo.h"
 
 
 Define_Module(TaskQueue);
@@ -38,16 +39,20 @@ DispatchingAlgo *TaskQueue::getDispatchingAlgo(std::string name, SchedulingAlgo 
     if (name == "Local") {
         dispatchingAlgo = new LocalDispatchingAlgo(schedulingAlgo, taskQueue);
     }
-    else if (name == "D2FO") {
+    else
+    if (name == "D2FO") {
         dispatchingAlgo = new D2FODispatchingAlgo(schedulingAlgo, taskQueue);
     }
-    else if (name == "DLAGO-TP") {
+    else
+    if (name == "DLAGO-TP") {
         dispatchingAlgo = new ProposedDispatchingAlgo(schedulingAlgo, taskQueue);
     }
-    else if (name == "GreedyPartition") {
+    else
+    if (name == "GreedyPartition") {
         dispatchingAlgo = new GreedyPartitionDispatchingAlgo(schedulingAlgo, taskQueue);
     }
-    else if (name == "RandomPartition") {
+    else
+    if (name == "RandomPartition") {
         dispatchingAlgo = new RandomPartitionDispatchingAlgo(schedulingAlgo, taskQueue);
     }
     else {
@@ -62,12 +67,18 @@ SchedulingAlgo *TaskQueue::getSchedulingAlgo(std::string name, TaskQueue *taskQu
     if (name == "FIFO") {
         schedulingAlgo = new FIFOSchedulingAlgo(taskQueue);
     }
-    else if (name == "EDF") {
+    else
+    if (name == "EDF") {
         schedulingAlgo = new EDFSchedulingAlgo(taskQueue);
     }
-    else if (name == "SST") {
+    else
+    if (name == "SST") {
         schedulingAlgo = new SSTSchedulingAlgo(taskQueue);
-    } else {
+    } else
+    if (name == "PRIORITY") {
+        schedulingAlgo = new PrioritySchedulingAlgo(taskQueue);
+    }
+    else {
         schedulingAlgo = new FIFOSchedulingAlgo(taskQueue);
     }
     return schedulingAlgo;

@@ -11,25 +11,13 @@
 class FinishedTaskCollector : public omnetpp::cSimpleModule
 {
   private:
-//    omnetpp::simsignal_t taskIdSignal;
-//    omnetpp::simsignal_t creationTimeSignal;
-//    omnetpp::simsignal_t totalWaitingTimeSignal;
-//    omnetpp::simsignal_t totalProcessingTimeSignal;
-//    omnetpp::simsignal_t totalPropagationTimeSignal;
-//    omnetpp::simsignal_t deadlineSignal;
-//    omnetpp::simsignal_t finishedTimeSignal;
-//    omnetpp::simsignal_t taskSizeSignal;
-//    omnetpp::simsignal_t requiredCycleSignal;
-//    omnetpp::simsignal_t processedCyclesSignal;
-//    omnetpp::simsignal_t arrivingServerSignal;
-//    omnetpp::simsignal_t runningServerSignal;
-//    omnetpp::simsignal_t hopCountSignal;
     omnetpp::simsignal_t isCompletedSignal;
-//    omnetpp::simsignal_t totalSubTaskCountSignal;
     omnetpp::simsignal_t splitTaskPartialCompleteSignal;
     omnetpp::simsignal_t splitTaskCompleteSignal;
-    omnetpp::simsignal_t totalTimeSignal;
-    omnetpp::simsignal_t totalRewardSignal;
+    omnetpp::simsignal_t taskTimeSignal;
+    omnetpp::simsignal_t rewardSignal;
+    omnetpp::simsignal_t completedDelayToleranceSignal;
+    omnetpp::simsignal_t delayToToleranceMultipleSignal;
     std::unordered_map<int64_t, std::pair<std::vector<Task*>, int>> taskMap;
 
   protected:

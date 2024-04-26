@@ -27,7 +27,7 @@ packet Task
     simtime_t totalProcessingTime;      // total time spent in processing
     simtime_t totalPropagationTime;     // total time spent in propagation
     simtime_t finishedTime;
-   	simtime_t delayTolerance;			// task need to finish before creattionTime + delayTolerance
+   	double delayTolerance;			// task need to finish before creattionTime + delayTolerance
    	double taskSize;				    // bytes
    	double wholeTaskSize;
    	double requiredCycle;

@@ -38,7 +38,7 @@ typedef std::vector<SubTask*> subTaskVector;
  *     simtime_t totalProcessingTime;      // total time spent in processing
  *     simtime_t totalPropagationTime;     // total time spent in propagation
  *     simtime_t finishedTime;
- *     simtime_t delayTolerance;			// task need to finish before creattionTime + delayTolerance
+ *     double delayTolerance;			// task need to finish before creattionTime + delayTolerance
  *     double taskSize;				    // bytes
  *     double wholeTaskSize;
  *     double requiredCycle;
@@ -70,7 +70,7 @@ class Task : public ::omnetpp::cPacket
     omnetpp::simtime_t totalProcessingTime = SIMTIME_ZERO;
     omnetpp::simtime_t totalPropagationTime = SIMTIME_ZERO;
     omnetpp::simtime_t finishedTime = SIMTIME_ZERO;
-    omnetpp::simtime_t delayTolerance = SIMTIME_ZERO;
+    double delayTolerance = 0;
     double taskSize = 0;
     double wholeTaskSize = 0;
     double requiredCycle = 0;
@@ -119,8 +119,8 @@ class Task : public ::omnetpp::cPacket
     virtual omnetpp::simtime_t getFinishedTime() const;
     virtual void setFinishedTime(omnetpp::simtime_t finishedTime);
 
-    virtual omnetpp::simtime_t getDelayTolerance() const;
-    virtual void setDelayTolerance(omnetpp::simtime_t delayTolerance);
+    virtual double getDelayTolerance() const;
+    virtual void setDelayTolerance(double delayTolerance);
 
     virtual double getTaskSize() const;
     virtual void setTaskSize(double taskSize);

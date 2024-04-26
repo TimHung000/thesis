@@ -17,6 +17,9 @@ public:
     void execute(omnetpp::cMessage *msg) override;
 
 protected:
+    double predictedLoadMultiple;
+    double subTaskThreshold;
+
     std::vector<Task*> preemptive(Task *task);
     void taskDispatching(Task *task);
     bool isNeighborLoadLessThanServerLoad();

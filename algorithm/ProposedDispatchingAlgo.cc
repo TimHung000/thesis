@@ -20,6 +20,8 @@
 ProposedDispatchingAlgo::ProposedDispatchingAlgo(SchedulingAlgo *schedulingAlgo, TaskQueue *taskQueue) {
     this->schedulingAlgo = schedulingAlgo;
     this->taskQueue = taskQueue;
+    this->predictedLoadMultiple = 1.5;
+    this->subTaskThreshold = 0.8;
 }
 
 ProposedDispatchingAlgo::~ProposedDispatchingAlgo() {}
@@ -34,7 +36,14 @@ void ProposedDispatchingAlgo::execute(omnetpp::cMessage *msg) {
         return;
     }
 
-    if (incomingTask->getSubTaskVec().size() == 1) { // task cannot split
+    subTaskVector& subTaskVec = incomingTask->getSubTaskVecForUpdate();
+    bool subTaskSizeOverThreshold = false;
+    for (SubTask *subTask: subTaskVec) {
+        if (subTask->getSubTaskSize() / incomingTask->getTaskSize() >= subTaskThreshold)
+            subTaskSizeOverThreshold = true;
+    }
+
+    if (subTaskVec.size() == 1 || subTaskSizeOverThreshold) { // task cannot split
         taskOffloading(incomingTask);
     } else {  // task can split
         trySplitAndOffload(incomingTask);
@@ -43,9 +52,7 @@ void ProposedDispatchingAlgo::execute(omnetpp::cMessage *msg) {
 }
 
 void ProposedDispatchingAlgo::trySplitAndOffload(Task *task) {
-    omnetpp::simtime_t taskDeadline = task->getCreationTime() + task->getDelayTolerance();
     subTaskVector& subTaskVec = task->getSubTaskVecForUpdate();
-
     std::vector<ServerStatus*> serverStatusVec;
     for (int i = 0; i < taskQueue->neighborServers.size(); ++i)
         serverStatusVec.push_back(taskQueue->getServerStatus(taskQueue->neighborServers[i]));
@@ -59,18 +66,20 @@ void ProposedDispatchingAlgo::trySplitAndOffload(Task *task) {
         return lhs->getSubTaskRequiredCPUCycle() > rhs->getSubTaskRequiredCPUCycle();
     });
 
+
+    omnetpp::simtime_t taskDeadline = task->getCreationTime() + task->getDelayTolerance();
     const double predictedTimeInTransmit = taskQueue->getSystemModule()->par("linkDelay").doubleValue();
-
-
 
     SubTask *curSubTask;
     int serverIdx = 0;
     int subTaskIdx = 0;
     while (subTaskIdx < subTaskVec.size() && serverIdx < serverStatusVec.size()) {
         curSubTask = subTaskVec[subTaskIdx];
-        omnetpp::simtime_t predictedFinishedTime = (serverStatusVec[serverIdx]->getTotalRequiredCycle() + curSubTask->getSubTaskRequiredCPUCycle())
-                / serverStatusVec[serverIdx]->getServerFrequency() + omnetpp::simTime();
-        predictedFinishedTime += (serverStatusVec[serverIdx]->getServerId() == taskQueue->serverId) ? 0 : predictedTimeInTransmit;
+        double curServerLoad = predictedLoadMultiple * (serverStatusVec[serverIdx]->getTotalRequiredCycle() / serverStatusVec[serverIdx]->getServerFrequency());
+        double transmisionTime = (serverStatusVec[serverIdx]->getServerId() == taskQueue->serverId) ? 0 : predictedTimeInTransmit;
+        omnetpp::simtime_t predictedFinishedTime = omnetpp::simTime() + curServerLoad + transmisionTime +
+                curSubTask->getSubTaskRequiredCPUCycle() / serverStatusVec[serverIdx]->getServerFrequency();
+
         if (predictedFinishedTime > taskDeadline)
             break;
 
@@ -161,9 +170,9 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
                 (task->getCreationTime() + task->getDelayTolerance() -
                         task->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
                 maxSpareTime,
-                static_cast<double>(task->getSubTaskVec().size() == task->getTotalSubTaskCount()),
                 task->getWholeRequiredCycle(),
-                maxWholeRequiredCycle
+                maxWholeRequiredCycle,
+                (task->getSubTaskVec().size() == task->getTotalSubTaskCount()) ? 1.0 : 1.0 / static_cast<double>(task->getTotalSubTaskCount())
             );
 
 
@@ -172,9 +181,9 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
                     ((*it)->getCreationTime() + (*it)->getDelayTolerance() -
                         (*it)->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
                     maxSpareTime,
-                    static_cast<double>((*it)->getSubTaskVec().size() == (*it)->getTotalSubTaskCount()),
                     (*it)->getWholeRequiredCycle(),
-                    maxWholeRequiredCycle
+                    maxWholeRequiredCycle,
+                    ((*it)->getSubTaskVec().size() == (*it)->getTotalSubTaskCount()) ? 1.0 : 1.0 / static_cast<double>((*it)->getTotalSubTaskCount())
                 );
 
         if (curScore > taskScore) {
@@ -188,17 +197,17 @@ std::vector<Task*> ProposedDispatchingAlgo::preemptive(Task *task) {
                 (lhs->getCreationTime() + lhs->getDelayTolerance() -
                         lhs->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
                 maxSpareTime,
-                static_cast<double>(lhs->getSubTaskVec().size() == lhs->getTotalSubTaskCount()),
                 lhs->getWholeRequiredCycle(),
-                maxWholeRequiredCycle
+                maxWholeRequiredCycle,
+                (lhs->getSubTaskVec().size() == lhs->getTotalSubTaskCount()) ? 1.0 : 1.0 / static_cast<double>(lhs->getTotalSubTaskCount())
             );
         double rhsScore = getScore(
                 (rhs->getCreationTime() + rhs->getDelayTolerance() -
                         rhs->getRequiredCycle() / taskQueue->serverFrequency - omnetpp::simTime()).dbl(),
                 maxSpareTime,
-                static_cast<double>(rhs->getSubTaskVec().size() == rhs->getTotalSubTaskCount()),
                 rhs->getWholeRequiredCycle(),
-                maxWholeRequiredCycle
+                maxWholeRequiredCycle,
+                (rhs->getSubTaskVec().size() == rhs->getTotalSubTaskCount()) ? 1.0 : 1.0 / static_cast<double>(rhs->getTotalSubTaskCount())
             );
         return lhsScore < rhsScore;
     });
