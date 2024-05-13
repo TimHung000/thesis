@@ -24,6 +24,7 @@ simple FinishedTaskCollector
 		@signal[reward](type="double");
 		@signal[completedDelayTolerance](type="double");
 		@signal[delayToToleranceMultiple](type="double");
+		@signal[remainedTimeRatio](type="double");
 
         @statistic[isCompleted](title="task status";source="isCompleted";record=count,sum,mean);
 		@statistic[splitTaskPartialComplete](title="splitTaskPartialComplete";source="splitTaskPartialComplete";record=count,sum);
@@ -32,6 +33,7 @@ simple FinishedTaskCollector
 		@statistic[reward](title="reward";source="reward";record=sum);
 		@statistic[completedDelayTolerance](title="completed Delay Tolerance";source="completedDelayTolerance";record=sum);
 		@statistic[delayToToleranceMultiple](title="delay To Tolerance Multiple";source="delayToToleranceMultiple";record=sum);
+		@statistic[remainedTimeRatio](title="remained Time Ratio";source="remainedTimeRatio";record=sum);
     gates:
         input in[];
 }

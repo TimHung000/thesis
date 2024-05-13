@@ -18,6 +18,7 @@ class FinishedTaskCollector : public omnetpp::cSimpleModule
     omnetpp::simsignal_t rewardSignal;
     omnetpp::simsignal_t completedDelayToleranceSignal;
     omnetpp::simsignal_t delayToToleranceMultipleSignal;
+    omnetpp::simsignal_t remainedTimeRatioSignal;
     std::unordered_map<int64_t, std::pair<std::vector<Task*>, int>> taskMap;
 
   protected:

@@ -23,6 +23,7 @@ void FinishedTaskCollector::initialize()
     rewardSignal = registerSignal("reward");
     completedDelayToleranceSignal = registerSignal("completedDelayTolerance");
     delayToToleranceMultipleSignal = registerSignal("delayToToleranceMultiple");
+    remainedTimeRatioSignal = registerSignal("remainedTimeRatio");
 }
 
 void FinishedTaskCollector::handleMessage(omnetpp::cMessage *msg)
@@ -62,6 +63,8 @@ void FinishedTaskCollector::emitSignal(Task *task) {
         emit(completedDelayToleranceSignal, task->getDelayTolerance());
         emit(delayToToleranceMultipleSignal, task->getDelayTolerance() /
                 (task->getFinishedTime() - task->getCreationTime()).dbl());
+        emit(remainedTimeRatioSignal, (task->getDelayTolerance() - (task->getFinishedTime() - task->getCreationTime()).dbl()) /
+                task->getDelayTolerance());
     }
     cancelAndDelete(task);
 }
@@ -102,7 +105,9 @@ void FinishedTaskCollector::emitSignal(std::vector<Task*>& subTaskVector) {
         emit(rewardSignal, task->getReward());
         emit(completedDelayToleranceSignal, task->getDelayTolerance());
         emit(delayToToleranceMultipleSignal, task->getDelayTolerance() /
-                (task->getFinishedTime() - task->getCreationTime()).dbl());
+                (finishedTime - creationTime).dbl());
+        emit(remainedTimeRatioSignal, (task->getDelayTolerance() - (finishedTime - creationTime).dbl()) /
+                task->getDelayTolerance());
     }
     for (int i = 0; i < subTaskVector.size(); ++i) {
         task = subTaskVector[i];

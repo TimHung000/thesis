@@ -108,7 +108,7 @@ Task *User::createTask()
     int totalWeight = 0;
     int curRand;
     for (int i = 0; i < randSubTaskCount; ++i) {
-        curRand = 1 + intrand(2);  // 1~2
+        curRand = 1 + intrand(3);  // 1~3
         weightVec.push_back(curRand);
         totalWeight += curRand;
     }

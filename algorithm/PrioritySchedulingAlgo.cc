@@ -98,6 +98,6 @@ std::list<Task*>::iterator PrioritySchedulingAlgo::getInsertionPoint(Task *task)
 }
 
 double PrioritySchedulingAlgo::getPriority(double spareTime, double maxSpareTime, double wholeRequiredCycle, double maxWholeRequiredCycle, double taskSplitFactor) {
-    return 1 * spareTime / maxSpareTime + 0* taskSplitFactor;
+    return 1 * spareTime / maxSpareTime + 0 * taskSplitFactor;
 }
 
